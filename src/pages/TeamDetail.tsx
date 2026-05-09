@@ -1,12 +1,13 @@
-import { ChevronLeft } from 'lucide-react'
+import { CheckSquare, ChevronLeft, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { Flag } from '@/components/Flag'
 import { GroupPill } from '@/components/GroupPill'
 import { StickerSheet } from '@/components/StickerSheet'
 import { StickerTile } from '@/components/StickerTile'
+import { Button } from '@/components/ui/button'
 import { teamByCode } from '@/data/teams'
-import { useTeamProgress } from '@/lib/state'
+import { incrementMany, useTeamProgress } from '@/lib/state'
 
 export function TeamDetail() {
   const { code = '' } = useParams<{ code: string }>()
@@ -14,33 +15,100 @@ export function TeamDetail() {
   const team = teamByCode(upper)
   const { have, total } = useTeamProgress(upper)
   const [openCode, setOpenCode] = useState<string | null>(null)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   if (!team) return <Navigate to="/teams" replace />
 
+  const enterSelect = () => {
+    setSelected(new Set())
+    setSelectMode(true)
+  }
+
+  const exitSelect = () => {
+    setSelectMode(false)
+    setSelected(new Set())
+  }
+
+  const toggleSelect = (stickerCode: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(stickerCode)) next.delete(stickerCode)
+      else next.add(stickerCode)
+      return next
+    })
+  }
+
+  const applyBulk = () => {
+    if (selected.size === 0) {
+      exitSelect()
+      return
+    }
+    void incrementMany(Array.from(selected))
+    exitSelect()
+  }
+
+  const headerStyle = { paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' } as const
+
   return (
     <div className="pb-24">
-      <header
-        className="sticky top-0 z-20 flex items-center gap-3 border-b border-neutral-200 bg-neutral-50/85 px-3 py-3 backdrop-blur"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
-      >
-        <Link
-          to="/teams"
-          aria-label="Back"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 active:bg-neutral-200"
+      {selectMode ? (
+        <header
+          className="sticky top-0 z-20 flex items-center gap-2 border-b border-neutral-200 bg-neutral-50/85 px-3 py-3 backdrop-blur"
+          style={headerStyle}
         >
-          <ChevronLeft className="h-5 w-5" />
-        </Link>
-        <Flag code={team.code} className="h-5 w-7" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="truncate text-base font-semibold text-neutral-900">{team.name}</h1>
-            <GroupPill group={team.group} />
+          <button
+            type="button"
+            onClick={exitSelect}
+            aria-label="Cancel selection"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 active:bg-neutral-200"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <span className="flex-1 text-sm font-medium text-neutral-900">
+            {selected.size} selected
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            onClick={applyBulk}
+            disabled={selected.size === 0}
+          >
+            +1 to all
+          </Button>
+        </header>
+      ) : (
+        <header
+          className="sticky top-0 z-20 flex items-center gap-3 border-b border-neutral-200 bg-neutral-50/85 px-3 py-3 backdrop-blur"
+          style={headerStyle}
+        >
+          <Link
+            to="/teams"
+            aria-label="Back"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 active:bg-neutral-200"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <Flag code={team.code} className="h-5 w-7" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-base font-semibold text-neutral-900">{team.name}</h1>
+              <GroupPill group={team.group} />
+            </div>
+            <p className="text-xs tabular-nums text-neutral-500">
+              {have}/{total} stickers
+            </p>
           </div>
-          <p className="text-xs tabular-nums text-neutral-500">
-            {have}/{total} stickers
-          </p>
-        </div>
-      </header>
+          <button
+            type="button"
+            onClick={enterSelect}
+            aria-label="Select multiple stickers"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 active:bg-neutral-200"
+          >
+            <CheckSquare className="h-5 w-5" />
+          </button>
+        </header>
+      )}
 
       <div className="grid grid-cols-4 gap-2 px-3 pt-4">
         {Array.from({ length: 20 }, (_, i) => {
@@ -52,12 +120,18 @@ export function TeamDetail() {
               code={stickerCode}
               num={num}
               onSelect={setOpenCode}
+              selectMode={selectMode}
+              selected={selected.has(stickerCode)}
+              onToggleSelect={toggleSelect}
             />
           )
         })}
       </div>
 
-      <StickerSheet code={openCode} onClose={() => setOpenCode(null)} />
+      <StickerSheet
+        code={selectMode ? null : openCode}
+        onClose={() => setOpenCode(null)}
+      />
     </div>
   )
 }
