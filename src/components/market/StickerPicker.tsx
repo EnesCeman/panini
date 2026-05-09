@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { TEAMS, stickerKind, teamByCode } from '@/data/teams'
 import { applyAutoDash } from '@/lib/autoDash'
+import { useT } from '@/lib/i18n'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
@@ -35,14 +36,20 @@ type MultiProps = {
 
 type Props = SingleProps | MultiProps
 
-function labelFor(code: string, num: number, name: string | null): string {
+function labelFor(
+  code: string,
+  num: number,
+  name: string | null,
+  t: ReturnType<typeof useT>,
+): string {
   const kind = stickerKind(num)
-  if (kind === 'badge') return 'Team badge'
-  if (kind === 'team_photo') return 'Team photo'
+  if (kind === 'badge') return t('card.badge')
+  if (kind === 'team_photo') return t('card.teamPhoto')
   return resolvePlayerLabel(code, name)
 }
 
 export function StickerPicker(props: Props) {
+  const t = useT()
   const stickers = useStickersMap()
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<'name' | 'code'>('name')
@@ -121,7 +128,7 @@ export function StickerPicker(props: Props) {
         <button
           type="button"
           onClick={props.onClose}
-          aria-label="Close"
+          aria-label={t('picker.close')}
           className="rounded-full p-1 text-neutral-500"
         >
           <X className="h-5 w-5" />
@@ -132,9 +139,9 @@ export function StickerPicker(props: Props) {
         <div className="mb-2 flex items-center justify-between">
           {isMulti ? (
             <p className="text-[11px] text-neutral-500">
-              Tap to select.{' '}
+              {t('picker.tapToSelect')}{' '}
               {maxSelection !== undefined &&
-                `Up to ${maxSelection} ${maxSelection === 1 ? 'sticker' : 'stickers'}.`}
+                t('picker.upTo', { count: maxSelection })}
             </p>
           ) : (
             <span />
@@ -150,7 +157,7 @@ export function StickerPicker(props: Props) {
                   mode === m ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-600',
                 )}
               >
-                {m === 'name' ? 'Name' : 'Code'}
+                {m === 'name' ? t('search.mode.name') : t('search.mode.code')}
               </button>
             ))}
           </div>
@@ -164,7 +171,11 @@ export function StickerPicker(props: Props) {
                 mode === 'code' ? applyAutoDash(e.target.value, TEAM_CODE_SET) : e.target.value,
               )
             }
-            placeholder={mode === 'code' ? 'Code, e.g. POR-5' : 'Player or team…'}
+            placeholder={
+              mode === 'code'
+                ? t('search.placeholder.code')
+                : t('search.placeholder.name')
+            }
             className="pl-9"
             autoComplete="off"
             autoFocus
@@ -174,7 +185,9 @@ export function StickerPicker(props: Props) {
 
       <ul className="flex-1 overflow-y-auto">
         {filtered.length === 0 && (
-          <li className="px-4 py-8 text-center text-sm text-neutral-500">No matches</li>
+          <li className="px-4 py-8 text-center text-sm text-neutral-500">
+            {t('browse.noMatches')}
+          </li>
         )}
         {filtered.map((c) => {
           const team = teamByCode(c.teamCode)
@@ -207,7 +220,7 @@ export function StickerPicker(props: Props) {
                 {team && <Flag code={team.code} className="h-4 w-6" />}
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm text-neutral-900">
-                    {labelFor(c.code, c.num, c.name)}
+                    {labelFor(c.code, c.num, c.name, t)}
                   </div>
                   <div className="text-[11px] text-neutral-500">{c.code}</div>
                 </div>
@@ -228,8 +241,7 @@ export function StickerPicker(props: Props) {
             onClick={handleConfirm}
             className="w-full"
           >
-            Add {selected.size}{' '}
-            {selected.size === 1 ? 'sticker' : 'stickers'}
+            {t('picker.add', { count: selected.size })}
           </Button>
         </div>
       )}

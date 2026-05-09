@@ -8,6 +8,7 @@ import { SearchBar } from '@/components/SearchBar'
 import { ReservationBadge } from '@/components/market/ReservationBadge'
 import { Button } from '@/components/ui/button'
 import { TEAMS, stickerKind, type Team } from '@/data/teams'
+import { useT } from '@/lib/i18n'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { availableSpare } from '@/lib/reservations'
@@ -24,10 +25,15 @@ type Item = {
   name: string | null
 }
 
-function labelFor(code: string, num: number, name: string | null): string {
+function labelFor(
+  code: string,
+  num: number,
+  name: string | null,
+  t: ReturnType<typeof useT>,
+): string {
   const kind = stickerKind(num)
-  if (kind === 'badge') return 'Team badge'
-  if (kind === 'team_photo') return 'Team photo'
+  if (kind === 'badge') return t('card.badge')
+  if (kind === 'team_photo') return t('card.teamPhoto')
   return resolvePlayerLabel(code, name)
 }
 
@@ -47,6 +53,7 @@ function useIsMobile(): boolean {
 }
 
 export function Browse() {
+  const t = useT()
   const stickers = useStickersMap()
   const [tab, setTab] = useState<MobileTab>('spares')
 
@@ -77,7 +84,9 @@ export function Browse() {
         </div>
       </div>
       <Link to="/market/new" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
-        <Button className="rounded-full shadow-lg">Build a custom proposal</Button>
+        <Button className="rounded-full shadow-lg">
+          {t('browse.cta.buildCustom')}
+        </Button>
       </Link>
     </div>
   )
@@ -92,13 +101,14 @@ function MobileTabBar({
   onChange: (t: MobileTab) => void
   totals: { missing: number; spareUnits: number }
 }) {
+  const t = useT()
   return (
     <div className="flex gap-1 rounded-lg border border-neutral-200 bg-white p-1 md:hidden">
       <TabButton active={tab === 'spares'} onClick={() => onChange('spares')}>
-        Spares · {totals.spareUnits}
+        {t('browse.tab.spares', { count: totals.spareUnits })}
       </TabButton>
       <TabButton active={tab === 'missing'} onClick={() => onChange('missing')}>
-        Missing · {totals.missing}
+        {t('browse.tab.missing', { count: totals.missing })}
       </TabButton>
     </div>
   )
@@ -128,63 +138,38 @@ function TabButton({
 }
 
 function Intro() {
+  const t = useT()
   return (
     <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
-      <p className="font-semibold">Hey! Looking to swap World Cup stickers?</p>
-      <p className="mt-2 text-xs text-neutral-600">
-        Tabs below: <strong>my spares</strong> (cards I have spare for swap) and{' '}
-        <strong>my missing</strong> (cards I still need). Tap any to start a
-        proposal with it pre-selected.
-      </p>
+      <p className="font-semibold">{t('browse.intro.title')}</p>
+      <p className="mt-2 text-xs text-neutral-600">{t('browse.intro.lead')}</p>
 
-      <p className="mt-3 text-xs font-semibold text-neutral-800">How to build a trade</p>
+      <p className="mt-3 text-xs font-semibold text-neutral-800">
+        {t('browse.intro.howTitle')}
+      </p>
       <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-neutral-600">
-        <li>
-          <strong>Start with what you'd offer:</strong> tap a card from{' '}
-          <em>Cards I'm missing</em>, then multi-select which of{' '}
-          <em>my spares</em> you want in return.
-        </li>
-        <li>
-          <strong>Or start with what you want:</strong> tap a card from{' '}
-          <em>Cards I have spare</em>, then multi-select which of{' '}
-          <em>my missing</em> you'd send my way.
-        </li>
+        <li>{t('browse.intro.howOffer')}</li>
+        <li>{t('browse.intro.howWant')}</li>
       </ul>
 
       <p className="mt-3 text-xs font-semibold text-neutral-800">
-        Per-trade ratio (one side must equal 1)
+        {t('browse.intro.ratioTitle')}
       </p>
       <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-neutral-600">
-        <li>
-          <strong>1 of yours → up to 5 of mine</strong> (offer one card I need
-          for up to five of my spares).
-        </li>
-        <li>
-          <strong>Many of yours → exactly 1 of mine</strong> (sweeten the deal:
-          send several cards I need for one specific spare of mine).
-        </li>
+        <li>{t('browse.intro.ratio1m')}</li>
+        <li>{t('browse.intro.ratioN1')}</li>
       </ul>
 
-      <p className="mt-3 text-xs font-semibold text-neutral-800">Other things to know</p>
-      <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-neutral-600">
-        <li>
-          You can <strong>bundle multiple trades</strong> into a single proposal
-          — add as many trades as you want before submitting.
-        </li>
-        <li>
-          Everything is <strong>editable before you submit</strong>: remove
-          cards, change quantities, or scrap a trade and start over.
-        </li>
-        <li>
-          After submitting you can't edit, but you'll get a tracking link and
-          can withdraw if you change your mind.
-        </li>
-      </ul>
-
-      <p className="mt-3 text-xs text-neutral-500">
-        Whether to accept is up to me — your proposal lands in my inbox and I'll
-        review it.
+      <p className="mt-3 text-xs font-semibold text-neutral-800">
+        {t('browse.intro.otherTitle')}
       </p>
+      <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-neutral-600">
+        <li>{t('browse.intro.otherBundle')}</li>
+        <li>{t('browse.intro.otherEdit')}</li>
+        <li>{t('browse.intro.otherWithdraw')}</li>
+      </ul>
+
+      <p className="mt-3 text-xs text-neutral-500">{t('browse.intro.outro')}</p>
     </div>
   )
 }
@@ -196,6 +181,7 @@ function ModeToggle({
   mode: SearchMode
   onChange: (m: SearchMode) => void
 }) {
+  const t = useT()
   return (
     <div className="inline-flex overflow-hidden rounded-md border border-neutral-200 text-[11px] font-medium">
       {(['name', 'code'] as const).map((m) => (
@@ -208,7 +194,7 @@ function ModeToggle({
             mode === m ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-600',
           )}
         >
-          {m === 'name' ? 'Name' : 'Code'}
+          {m === 'name' ? t('search.mode.name') : t('search.mode.code')}
         </button>
       ))}
     </div>
@@ -293,6 +279,7 @@ function CollapsibleTeamGroup({
 }
 
 function MissingSection() {
+  const t = useT()
   const stickers = useStickersMap()
   const { incoming } = useReservations()
   const isMobile = useIsMobile()
@@ -358,12 +345,12 @@ function MissingSection() {
       <header className="mb-2">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-neutral-900">
-            Cards I'm missing ({items.length})
+            {t('browse.section.missing.title', { count: items.length })}
           </h2>
           <ModeToggle mode={mode} onChange={handleModeChange} />
         </div>
         <p className="mt-1 text-[11px] text-neutral-500">
-          You might have one of these? Search or tap a team to expand.
+          {t('browse.section.missing.subtitle')}
         </p>
       </header>
       <div
@@ -376,13 +363,15 @@ function MissingSection() {
           <SearchBar
             value={query}
             onChange={handleQueryChange}
-            placeholder="Player, team…"
+            placeholder={t('search.placeholder.name')}
           />
         )}
       </div>
       <div ref={resultsRef} className="mt-3 flex flex-col gap-2">
         {grouped.length === 0 ? (
-          <p className="py-6 text-center text-xs text-neutral-500">No matches</p>
+          <p className="py-6 text-center text-xs text-neutral-500">
+            {t('browse.noMatches')}
+          </p>
         ) : (
           grouped.map(({ team, items: teamItems }) => {
             const hasIncoming = teamItems.some((i) => (incoming.get(i.code) ?? 0) > 0)
@@ -418,7 +407,7 @@ function MissingSection() {
                           {s.num}
                         </span>
                         <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900">
-                          {labelFor(s.code, s.num, s.name)}
+                          {labelFor(s.code, s.num, s.name, t)}
                         </span>
                         {(incoming.get(s.code) ?? 0) > 0 && (
                           <ReservationBadge
@@ -443,6 +432,7 @@ function MissingSection() {
 }
 
 function DoublesSection() {
+  const t = useT()
   const stickers = useStickersMap()
   const { outgoing } = useReservations()
   const isMobile = useIsMobile()
@@ -518,12 +508,12 @@ function DoublesSection() {
       <header className="mb-2">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-neutral-900">
-            Cards I have spare ({totalSpare})
+            {t('browse.section.spares.title', { count: totalSpare })}
           </h2>
           <ModeToggle mode={mode} onChange={handleModeChange} />
         </div>
         <p className="mt-1 text-[11px] text-neutral-500">
-          Anything you want? Tap a team to expand, then tap a card.
+          {t('browse.section.spares.subtitle')}
         </p>
       </header>
       <div
@@ -536,13 +526,15 @@ function DoublesSection() {
           <SearchBar
             value={query}
             onChange={handleQueryChange}
-            placeholder="Player, team…"
+            placeholder={t('search.placeholder.name')}
           />
         )}
       </div>
       <div ref={resultsRef} className="mt-3 flex flex-col gap-2">
         {grouped.length === 0 ? (
-          <p className="py-6 text-center text-xs text-neutral-500">No matches</p>
+          <p className="py-6 text-center text-xs text-neutral-500">
+            {t('browse.noMatches')}
+          </p>
         ) : (
           grouped.map(({ team, items: teamItems }) => {
             const hasReservations = teamItems.some((s) => {
@@ -576,7 +568,7 @@ function DoublesSection() {
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-medium text-neutral-900">
-                            {labelFor(s.code, s.num, s.name)}
+                            {labelFor(s.code, s.num, s.name, t)}
                           </div>
                           <div className="text-[11px] tabular-nums text-neutral-500">
                             {s.available} of {s.count - 1} spare

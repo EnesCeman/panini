@@ -4,21 +4,11 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Flag } from '@/components/Flag'
 import { Button } from '@/components/ui/button'
 import { teamByCode } from '@/data/teams'
-import {
-  resolvePlayerLabel,
-} from '@/lib/playerName'
+import { useT } from '@/lib/i18n'
+import { resolvePlayerLabel } from '@/lib/playerName'
 import type { Proposal } from '@/lib/proposalSchema'
 import { fetchProposalById, withdrawProposal } from '@/lib/proposals'
 import { useProposal } from '@/lib/state'
-
-const STATUS_LABEL: Record<Proposal['status'], string> = {
-  pending: 'Pending — awaiting decision',
-  accepted: 'Accepted — arrange the swap',
-  rejected: 'Rejected',
-  withdrawn: 'Withdrawn',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-}
 
 const STATUS_COLOR: Record<Proposal['status'], string> = {
   pending: 'bg-amber-100 text-amber-900',
@@ -30,6 +20,7 @@ const STATUS_COLOR: Record<Proposal['status'], string> = {
 }
 
 export function ProposalTracking() {
+  const t = useT()
   const { id } = useParams<{ id: string }>()
   const [params] = useSearchParams()
   const justSubmitted = params.get('just') === '1'
@@ -47,12 +38,16 @@ export function ProposalTracking() {
   if (proposal === null) {
     return (
       <div className="px-4 pt-8 text-center text-sm text-neutral-500">
-        Proposal not found.
+        {t('tracking.notFound')}
       </div>
     )
   }
   if (proposal === undefined) {
-    return <div className="px-4 pt-8 text-center text-sm text-neutral-500">Loading…</div>
+    return (
+      <div className="px-4 pt-8 text-center text-sm text-neutral-500">
+        {t('tracking.loading')}
+      </div>
+    )
   }
 
   return <ProposalView proposal={proposal} justSubmitted={justSubmitted} />
@@ -65,21 +60,31 @@ function ProposalView({
   proposal: Proposal
   justSubmitted: boolean
 }) {
+  const t = useT()
   const [withdrawing, setWithdrawing] = useState(false)
   const url = typeof window !== 'undefined' ? window.location.href : ''
+
+  const STATUS_LABEL: Record<Proposal['status'], string> = {
+    pending: t('tracking.status.pending'),
+    accepted: t('tracking.status.accepted'),
+    rejected: t('tracking.status.rejected'),
+    withdrawn: t('tracking.status.withdrawn'),
+    completed: t('tracking.status.completed'),
+    cancelled: t('tracking.status.cancelled'),
+  }
 
   async function copy() {
     await navigator.clipboard.writeText(url)
   }
 
   async function onWithdraw() {
-    if (!confirm('Withdraw this proposal? This cannot be undone.')) return
+    if (!confirm(t('tracking.withdraw.confirm'))) return
     setWithdrawing(true)
     try {
       await withdrawProposal(proposal.id)
     } catch (e) {
       console.error(e)
-      alert('Failed to withdraw.')
+      alert(t('tracking.withdraw.failed'))
     } finally {
       setWithdrawing(false)
     }
@@ -92,19 +97,19 @@ function ProposalView({
         className="inline-flex items-center gap-1 self-start text-xs text-neutral-600 hover:text-neutral-900"
       >
         <ChevronLeft className="h-4 w-4" />
-        Back to browse
+        {t('tracking.back')}
       </Link>
       {justSubmitted && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
-          <p className="font-semibold">Submitted!</p>
-          <p>Save this URL to track status — there's no login.</p>
+          <p className="font-semibold">{t('tracking.submitted.title')}</p>
+          <p>{t('tracking.submitted.body')}</p>
           <Button
             type="button"
             variant="outline"
             className="mt-2"
             onClick={() => void copy()}
           >
-            Copy link
+            {t('tracking.copyLink')}
           </Button>
         </div>
       )}
@@ -116,25 +121,31 @@ function ProposalView({
       </div>
 
       <section className="rounded-xl border border-neutral-200 bg-white p-4">
-        <h2 className="mb-2 text-sm font-semibold text-neutral-900">Trades</h2>
+        <h2 className="mb-2 text-sm font-semibold text-neutral-900">
+          {t('tracking.trades')}
+        </h2>
         <ul className="flex flex-col gap-3">
-          {proposal.trades.map((t, idx) => (
+          {proposal.trades.map((trade, idx) => (
             <li key={idx} className="rounded-lg bg-neutral-50 p-3">
               <div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-                Trade {idx + 1}
+                {t('tracking.trade.n', { n: idx + 1 })}
               </div>
               <div className="mt-2">
-                <div className="text-[11px] uppercase text-neutral-500">I offer</div>
+                <div className="text-[11px] uppercase text-neutral-500">
+                  {t('tracking.trade.offer')}
+                </div>
                 <div className="mt-1 flex flex-wrap gap-1">
-                  {t.offered.map((code) => (
+                  {trade.offered.map((code) => (
                     <CodeChip key={code} code={code} />
                   ))}
                 </div>
               </div>
               <div className="mt-2">
-                <div className="text-[11px] uppercase text-neutral-500">I want</div>
+                <div className="text-[11px] uppercase text-neutral-500">
+                  {t('tracking.trade.want')}
+                </div>
                 <div className="mt-1 flex flex-wrap gap-1">
-                  {t.requested.map((r) => (
+                  {trade.requested.map((r) => (
                     <CodeChip key={r.code} code={r.code} qty={r.qty} />
                   ))}
                 </div>
@@ -148,13 +159,17 @@ function ProposalView({
         <section className="rounded-xl border border-neutral-200 bg-white p-4 text-sm">
           {proposal.proposerNote && (
             <div className="mb-2">
-              <div className="text-[11px] uppercase text-neutral-500">Your note</div>
+              <div className="text-[11px] uppercase text-neutral-500">
+                {t('tracking.note.your')}
+              </div>
               <p className="mt-1 text-neutral-800">{proposal.proposerNote}</p>
             </div>
           )}
           {proposal.ownerNote && (
             <div>
-              <div className="text-[11px] uppercase text-neutral-500">Owner reply</div>
+              <div className="text-[11px] uppercase text-neutral-500">
+                {t('tracking.note.owner')}
+              </div>
               <p className="mt-1 text-neutral-800">{proposal.ownerNote}</p>
             </div>
           )}
@@ -162,8 +177,13 @@ function ProposalView({
       )}
 
       {proposal.status === 'pending' && (
-        <Button type="button" variant="outline" onClick={() => void onWithdraw()} disabled={withdrawing}>
-          {withdrawing ? 'Withdrawing…' : 'Cancel proposal'}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void onWithdraw()}
+          disabled={withdrawing}
+        >
+          {withdrawing ? t('tracking.withdraw.busy') : t('tracking.withdraw')}
         </Button>
       )}
     </div>

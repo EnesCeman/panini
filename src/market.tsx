@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import 'flag-icons/css/flag-icons.min.css'
 import { Toaster } from '@/components/Toaster'
+import { LocaleProvider } from '@/lib/i18n'
 import { subscribeProposals, subscribeStickers } from '@/lib/state'
 import { Browse } from '@/pages/market/Browse'
 import { MarketShell } from '@/pages/market/MarketShell'
@@ -21,17 +22,19 @@ function MarketApp() {
   }, [])
 
   return (
-    <BrowserRouter>
-      <Toaster />
-      <MarketShell>
-        <Routes>
-          <Route path="/market" element={<Browse />} />
-          <Route path="/market/new" element={<NewProposal />} />
-          <Route path="/market/p/:id" element={<ProposalTracking />} />
-          <Route path="*" element={<Navigate to="/market" replace />} />
-        </Routes>
-      </MarketShell>
-    </BrowserRouter>
+    <LocaleProvider>
+      <BrowserRouter>
+        <Toaster />
+        <MarketShell>
+          <Routes>
+            <Route path="/market" element={<Browse />} />
+            <Route path="/market/new" element={<NewProposal />} />
+            <Route path="/market/p/:id" element={<ProposalTracking />} />
+            <Route path="*" element={<Navigate to="/market" replace />} />
+          </Routes>
+        </MarketShell>
+      </BrowserRouter>
+    </LocaleProvider>
   )
 }
 

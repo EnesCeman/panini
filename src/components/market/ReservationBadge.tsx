@@ -1,3 +1,4 @@
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -7,12 +8,15 @@ type Props = {
 }
 
 export function ReservationBadge({ kind, reserved, className }: Props) {
+  const t = useT()
   const label =
     kind === 'incoming'
-      ? `incoming${reserved && reserved > 1 ? ` ×${reserved}` : ''}`
+      ? reserved && reserved > 1
+        ? t('badge.incomingMulti', { count: reserved })
+        : t('badge.incoming')
       : kind === 'all-reserved'
-        ? 'all reserved'
-        : `${reserved ?? 0} reserved`
+        ? t('badge.allReserved')
+        : t('badge.partialReserved', { count: reserved ?? 0 })
   return (
     <span
       className={cn(

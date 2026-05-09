@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { TradeRow } from '@/components/market/TradeRow'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useT } from '@/lib/i18n'
 import {
   TRADES_PER_PROPOSAL_CAP,
   validateProposalDraft,
@@ -14,6 +15,7 @@ import { createProposal } from '@/lib/proposals'
 const EMPTY_TRADE: Trade = { offered: [], requested: [] }
 
 export function NewProposal() {
+  const t = useT()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const offerParam = params.get('offer')
@@ -36,7 +38,7 @@ export function NewProposal() {
     setError(null)
     const v = validateProposalDraft(draft)
     if (!v.ok) {
-      setError(`Cannot submit: ${v.reason.replace(/_/g, ' ')}`)
+      setError(t('new.error.cannot', { reason: v.reason.replace(/_/g, ' ') }))
       return
     }
     setSubmitting(true)
@@ -45,7 +47,7 @@ export function NewProposal() {
       navigate(`/market/p/${id}?just=1`)
     } catch (e) {
       console.error(e)
-      setError('Failed to submit. Try again.')
+      setError(t('new.error.failed'))
     } finally {
       setSubmitting(false)
     }
@@ -58,13 +60,11 @@ export function NewProposal() {
         className="inline-flex items-center gap-1 self-start text-xs text-neutral-600 hover:text-neutral-900"
       >
         <ChevronLeft className="h-4 w-4" />
-        Back to browse
+        {t('tracking.back')}
       </Link>
       <div>
-        <h1 className="text-base font-semibold text-neutral-900">New proposal</h1>
-        <p className="mt-1 text-xs text-neutral-500">
-          Each trade: 1 you offer for up to 5 you want, OR many you offer for exactly 1 you want.
-        </p>
+        <h1 className="text-base font-semibold text-neutral-900">{t('new.title')}</h1>
+        <p className="mt-1 text-xs text-neutral-500">{t('new.lead')}</p>
       </div>
 
       <div className="flex flex-col gap-3">
@@ -96,19 +96,21 @@ export function NewProposal() {
           onClick={() => setTrades([...trades, { ...EMPTY_TRADE }])}
         >
           <Plus className="h-4 w-4" />
-          Add another trade
+          {t('new.addTrade')}
         </Button>
       )}
 
       <section className="rounded-xl border border-neutral-200 bg-white p-4">
-        <h3 className="mb-3 text-sm font-semibold text-neutral-900">Your details</h3>
+        <h3 className="mb-3 text-sm font-semibold text-neutral-900">
+          {t('new.details.title')}
+        </h3>
         <p className="mb-3 text-[11px] text-neutral-500">
-          <span className="text-rose-600">*</span> required
+          <span className="text-rose-600">*</span> {t('new.details.required').replace('* ', '')}
         </p>
         <div className="flex flex-col gap-3">
           <label className="block">
             <span className="mb-1 block text-[11px] font-medium text-neutral-600">
-              Your name <span className="text-rose-600">*</span>
+              {t('new.details.name')} <span className="text-rose-600">*</span>
             </span>
             <Input
               value={name}
@@ -119,24 +121,25 @@ export function NewProposal() {
           </label>
           <label className="block">
             <span className="mb-1 block text-[11px] font-medium text-neutral-600">
-              Contact (email, phone, IG handle…) <span className="text-rose-600">*</span>
+              {t('new.details.contact')} <span className="text-rose-600">*</span>
             </span>
             <Input
               value={contact}
               onChange={(e) => setContact(e.target.value)}
-              placeholder="me@example.com"
+              placeholder={t('new.details.contactPlaceholder')}
               required
               aria-required="true"
             />
           </label>
           <label className="block">
             <span className="mb-1 block text-[11px] font-medium text-neutral-600">
-              Note <span className="text-neutral-400">(optional)</span>
+              {t('new.details.note')}{' '}
+              <span className="text-neutral-400">{t('new.details.noteOptional')}</span>
             </span>
             <Input
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="e.g., can ship from Lisbon"
+              placeholder={t('new.details.notePlaceholder')}
             />
           </label>
         </div>
@@ -151,11 +154,11 @@ export function NewProposal() {
         disabled={!validation.ok || submitting}
         onClick={() => void handleSubmit()}
       >
-        {submitting ? 'Submitting…' : 'Submit proposal'}
+        {submitting ? t('new.submit.busy') : t('new.submit')}
       </Button>
 
       <Link to="/market" className="text-center text-xs text-neutral-500">
-        Cancel and go back
+        {t('new.cancel')}
       </Link>
     </div>
   )
