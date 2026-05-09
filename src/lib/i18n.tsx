@@ -281,22 +281,14 @@ const translations = {
 export type TKey = keyof typeof translations.en
 
 function detectLocale(): Locale {
-  if (typeof window === 'undefined') return 'en'
+  // Default is Bosnian. Users can override via the EN/BS toggle in
+  // the marketplace header, which persists their choice in localStorage.
+  if (typeof window === 'undefined') return 'bs'
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY)
     if (saved === 'en' || saved === 'bs') return saved
   } catch {}
-  const lang = (navigator.language ?? 'en').toLowerCase()
-  if (
-    lang.startsWith('bs') ||
-    lang.startsWith('sr') ||
-    lang.startsWith('hr') ||
-    lang.startsWith('cnr') ||
-    lang.startsWith('me')
-  ) {
-    return 'bs'
-  }
-  return 'en'
+  return 'bs'
 }
 
 // Bosnian plural form selector. CLDR rules: one (1, 21, 31, but not 11),
