@@ -1,10 +1,11 @@
-import { Minus, Plus } from 'lucide-react'
+import { LogIn, Minus, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Flag } from '@/components/Flag'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { stickerKind, teamByCode } from '@/data/teams'
+import { signInWithGoogle, useIsAdmin } from '@/lib/auth'
 import { albumPlayerName } from '@/lib/playerName'
 import {
   decrementSticker,
@@ -28,6 +29,8 @@ export function StickerSheet({ code, onClose }: Props) {
   const open = code !== null
   const sticker = useSticker(code ?? '___')
   const [draftName, setDraftName] = useState('')
+  const adminCheck = useIsAdmin()
+  const canEdit = adminCheck.status === 'admin'
 
   useEffect(() => {
     if (code) setDraftName(sticker.name ?? '')
@@ -48,7 +51,7 @@ export function StickerSheet({ code, onClose }: Props) {
   const allowName = kind === 'player'
 
   const commitName = () => {
-    if (!code) return
+    if (!code || !canEdit) return
     void setStickerName(code, draftName)
   }
 
@@ -72,7 +75,7 @@ export function StickerSheet({ code, onClose }: Props) {
             size="icon"
             variant="outline"
             aria-label="Decrement"
-            disabled={sticker.count === 0}
+            disabled={!canEdit || sticker.count === 0}
             onClick={() => void decrementSticker(code)}
             className="h-12 w-12 rounded-full"
           >
@@ -94,12 +97,24 @@ export function StickerSheet({ code, onClose }: Props) {
             type="button"
             size="icon"
             aria-label="Increment"
+            disabled={!canEdit}
             onClick={() => void incrementSticker(code)}
             className="h-12 w-12 rounded-full"
           >
             <Plus className="h-5 w-5" />
           </Button>
         </div>
+
+        {!canEdit && (
+          <button
+            type="button"
+            onClick={() => void signInWithGoogle()}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700"
+          >
+            <LogIn className="h-3.5 w-3.5" />
+            Sign in to edit
+          </button>
+        )}
 
         {allowName && (
           <div>
@@ -117,6 +132,7 @@ export function StickerSheet({ code, onClose }: Props) {
               }}
               placeholder={albumPlayerName(code) ?? 'Add a name'}
               autoComplete="off"
+              disabled={!canEdit}
             />
             {albumPlayerName(code) && !draftName && (
               <p className="mt-1 text-[11px] text-neutral-500">
