@@ -57,7 +57,7 @@ function StatTile({
     <>
       {to && (
         <ChevronRight
-          className="absolute right-1 top-1 h-3.5 w-3.5 text-neutral-300 transition group-hover:text-neutral-600"
+          className="absolute right-1.5 top-1.5 h-4 w-4 text-neutral-500 transition group-hover:text-neutral-800"
           strokeWidth={2.5}
         />
       )}
