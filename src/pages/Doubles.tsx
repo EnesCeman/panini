@@ -83,7 +83,7 @@ export function Doubles() {
   return (
     <div className="pb-24">
       <header
-        className="sticky top-0 z-20 flex flex-col gap-3 border-b border-neutral-200 bg-neutral-50/85 px-4 pb-3 backdrop-blur"
+        className="sticky top-0 z-20 flex flex-col gap-3 border-b border-neutral-200 bg-neutral-50 px-4 pb-3"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >
         <h1 className="text-lg font-semibold text-neutral-900">{totalExtras} extras to give</h1>

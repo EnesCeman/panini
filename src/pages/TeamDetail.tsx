@@ -73,7 +73,7 @@ export function TeamDetail() {
     <div className="pb-24">
       {selectMode ? (
         <header
-          className="sticky top-0 z-20 flex items-center gap-2 border-b border-neutral-200 bg-neutral-50/85 px-3 py-3 backdrop-blur"
+          className="sticky top-0 z-20 flex items-center gap-2 border-b border-neutral-200 bg-neutral-50 px-3 py-3"
           style={headerStyle}
         >
           <button
@@ -98,7 +98,7 @@ export function TeamDetail() {
         </header>
       ) : (
         <header
-          className="sticky top-0 z-20 flex items-center gap-3 border-b border-neutral-200 bg-neutral-50/85 px-3 py-3 backdrop-blur"
+          className="sticky top-0 z-20 flex items-center gap-3 border-b border-neutral-200 bg-neutral-50 px-3 py-3"
           style={headerStyle}
         >
           <Link
