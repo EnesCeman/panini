@@ -103,13 +103,15 @@ function MobileTabBar({
 }) {
   const t = useT()
   return (
-    <div className="flex gap-1 rounded-lg border border-neutral-200 bg-white p-1 md:hidden">
-      <TabButton active={tab === 'spares'} onClick={() => onChange('spares')}>
-        {t('browse.tab.spares', { count: totals.spareUnits })}
-      </TabButton>
-      <TabButton active={tab === 'missing'} onClick={() => onChange('missing')}>
-        {t('browse.tab.missing', { count: totals.missing })}
-      </TabButton>
+    <div className="sticky top-[60px] z-20 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:hidden">
+      <div className="flex gap-1 rounded-lg border border-neutral-200 bg-white p-1">
+        <TabButton active={tab === 'spares'} onClick={() => onChange('spares')}>
+          {t('browse.tab.spares', { count: totals.spareUnits })}
+        </TabButton>
+        <TabButton active={tab === 'missing'} onClick={() => onChange('missing')}>
+          {t('browse.tab.missing', { count: totals.missing })}
+        </TabButton>
+      </div>
     </div>
   )
 }
@@ -220,20 +222,24 @@ function matchesQuery(
   )
 }
 
-// Scrolls so the sticky search bar pins at top:60 and the section's
-// title/subtitle (which now sit ABOVE the sticky search bar) are tucked
-// under the page header. We anchor on the results container — its
-// natural top minus the sticky bar's height equals the scroll position
-// where the sticky bar is right at top:60. Only pull UP — never yank
-// the user down if they're already above.
+// Scrolls so the sticky search bar lands at its pinned position and the
+// section title/subtitle (above it) is tucked under the page header.
+// We anchor on the results container — its natural top minus the sticky
+// bar's height equals the scroll where the bar is pinned. The header
+// offset is 60 on desktop (page header only) and 112 on mobile (page
+// header + sticky tab bar). Only pull UP — never yank down.
 function ensureResultsAtTop(
   resultsEl: HTMLElement | null,
   stickyEl: HTMLElement | null,
 ) {
   if (!resultsEl || !stickyEl) return
+  const isMobile =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 767px)').matches
+  const headerOffset = isMobile ? 112 : 60
   const stickyHeight = stickyEl.getBoundingClientRect().height
   const resultsDocTop = resultsEl.getBoundingClientRect().top + window.scrollY
-  const target = resultsDocTop - 60 - stickyHeight
+  const target = resultsDocTop - headerOffset - stickyHeight
   if (window.scrollY > target) {
     window.scrollTo({ top: target, behavior: 'smooth' })
   }
@@ -355,7 +361,7 @@ function MissingSection() {
       </header>
       <div
         ref={stickyRef}
-        className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6"
+        className="sticky top-[112px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:top-[60px] md:-mx-6 md:px-6"
       >
         {mode === 'code' ? (
           <CodeSearchInput value={query} onChange={handleQueryChange} />
@@ -518,7 +524,7 @@ function DoublesSection() {
       </header>
       <div
         ref={stickyRef}
-        className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6"
+        className="sticky top-[112px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:top-[60px] md:-mx-6 md:px-6"
       >
         {mode === 'code' ? (
           <CodeSearchInput value={query} onChange={handleQueryChange} />
