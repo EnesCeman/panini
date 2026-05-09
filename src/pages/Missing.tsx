@@ -4,6 +4,7 @@ import { GroupPill } from '@/components/GroupPill'
 import { SearchBar } from '@/components/SearchBar'
 import { StickerSheet } from '@/components/StickerSheet'
 import { GROUPS, TEAMS, stickerKind } from '@/data/teams'
+import { resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
 import { groupColor } from '@/lib/groupColors'
@@ -150,7 +151,7 @@ function labelFor(code: string, num: number, name: string | null): string {
   const kind = stickerKind(num)
   if (kind === 'badge') return 'Team badge'
   if (kind === 'team_photo') return 'Team photo'
-  return name && name.length > 0 ? name : code
+  return resolvePlayerLabel(code, name)
 }
 
 function EmptyState({ message }: { message: string }) {

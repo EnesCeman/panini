@@ -2,6 +2,7 @@ import { Check, Minus, Plus } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
 import { stickerKind } from '@/data/teams'
+import { resolvePlayerLabel } from '@/lib/playerName'
 import { decrementSticker, incrementSticker, useSticker } from '@/lib/state'
 
 type Props = {
@@ -33,9 +34,7 @@ export function StickerTile({
       ? 'BADGE'
       : kind === 'team_photo'
         ? 'TEAM PHOTO'
-        : sticker.name && sticker.name.length > 0
-          ? sticker.name
-          : code
+        : resolvePlayerLabel(code, sticker.name)
 
   const stop = (e: MouseEvent) => {
     e.stopPropagation()

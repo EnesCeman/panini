@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { stickerKind, teamByCode } from '@/data/teams'
+import { albumPlayerName } from '@/lib/playerName'
 import {
   decrementSticker,
   incrementSticker,
@@ -114,9 +115,14 @@ export function StickerSheet({ code, onClose }: Props) {
                   e.currentTarget.blur()
                 }
               }}
-              placeholder="Add a name"
+              placeholder={albumPlayerName(code) ?? 'Add a name'}
               autoComplete="off"
             />
+            {albumPlayerName(code) && !draftName && (
+              <p className="mt-1 text-[11px] text-neutral-500">
+                Using album default. Type to override.
+              </p>
+            )}
           </div>
         )}
       </SheetContent>
