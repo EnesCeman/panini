@@ -55,20 +55,21 @@ export function Players() {
     const q = normalizeForSearch(query)
     const base =
       q.length === 0
-        ? allSlots.filter((p) => p.source !== 'none')
+        ? allSlots
         : allSlots.filter(
             (p) =>
               normalizeForSearch(p.name).includes(q) ||
               normalizeForSearch(p.team.name).includes(q) ||
               normalizeForSearch(p.code).includes(q),
           )
-    return [...base].sort((a, b) => a.name.localeCompare(b.name))
+    const named = base
+      .filter((p) => p.source !== 'none')
+      .sort((a, b) => a.name.localeCompare(b.name))
+    const unnamed = base
+      .filter((p) => p.source === 'none')
+      .sort((a, b) => a.code.localeCompare(b.code))
+    return [...named, ...unnamed]
   }, [allSlots, query])
-
-  const namedCount = useMemo(
-    () => allSlots.filter((p) => p.source !== 'none').length,
-    [allSlots],
-  )
 
   return (
     <div className="pb-24">
@@ -87,9 +88,7 @@ export function Players() {
         />
       </header>
 
-      {namedCount === 0 && query.length === 0 ? (
-        <EmptyState message="No player names recorded yet. Type a sticker code (e.g. POR-3) to search any slot, or names will appear here as album data fills in." />
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <EmptyState message="No players match" />
       ) : (
         <ul className="flex flex-col gap-1.5 px-4 pt-4">
