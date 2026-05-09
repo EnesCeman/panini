@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Flag } from '@/components/Flag'
 import { GroupPill } from '@/components/GroupPill'
+import { QuickAdd } from '@/components/QuickAdd'
 import { SearchBar } from '@/components/SearchBar'
 import { StickerSheet } from '@/components/StickerSheet'
 import { GROUPS, TEAMS, stickerKind } from '@/data/teams'
@@ -86,6 +87,7 @@ export function Doubles() {
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >
         <h1 className="text-lg font-semibold text-neutral-900">{totalExtras} extras to give</h1>
+        <QuickAdd />
         <SearchBar value={query} onChange={setQuery} placeholder="Search by code, name, or team" />
         <div className="flex flex-wrap gap-1.5">
           {GROUPS.map((g) => {
