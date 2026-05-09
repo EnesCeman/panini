@@ -1,5 +1,7 @@
 {
   "rewrites": [
-    { "source": "/((?!assets/).*)", "destination": "/" }
+    { "source": "/market/:path*", "destination": "/market.html" },
+    { "source": "/market", "destination": "/market.html" },
+    { "source": "/((?!market|assets|favicon).*)", "destination": "/index.html" }
   ]
 }
