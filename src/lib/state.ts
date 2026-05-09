@@ -6,6 +6,7 @@ import {
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore'
+import { useMemo } from 'react'
 import { create } from 'zustand'
 import { useShallow } from 'zustand/shallow'
 import { TEAMS } from '@/data/teams'
@@ -153,8 +154,10 @@ export function useProposal(id: string | undefined): Proposal | undefined {
 }
 
 export function useReservations(): ReservationMaps {
-  return useStore(
-    useShallow((s) => deriveReservations(Array.from(s.proposals.values()))),
+  const proposals = useStore((s) => s.proposals)
+  return useMemo(
+    () => deriveReservations(Array.from(proposals.values())),
+    [proposals],
   )
 }
 
