@@ -8,7 +8,9 @@
 Add a public-facing marketplace on top of the existing Panini sticker tracker so that external visitors can:
 
 - Browse the owner's missing list and doubles list with independent search per list.
-- Submit swap proposals containing one or more *trades*. Each trade offers exactly one sticker the owner is missing in exchange for 1–5 stickers from the owner's doubles.
+- Submit swap proposals containing one or more *trades*. Each trade has one of two valid shapes:
+  - **1 : M** — exactly one sticker the owner is missing in exchange for 1–5 stickers from the owner's doubles, or
+  - **N : 1** — any number of distinct stickers the owner is missing in exchange for exactly one of the owner's doubles (no upper bound on the offered side; owner decides whether the deal is worth it).
 - Track and withdraw their own proposals via a unique URL — no account or login.
 
 The owner (and a small set of admins) reviews proposals in an in-app inbox, accepts or rejects, and later marks accepted proposals as completed or cancelled. The marketplace is purely matchmaking; sticker counts are only ever changed manually in the existing admin pages.
@@ -22,7 +24,6 @@ The owner (and a small set of admins) reviews proposals in an in-app inbox, acce
 - Automatic sticker count updates from proposal completion. Counts are always edited manually in existing pages.
 - Proposer accounts or login.
 - Partial accepts within a proposal — accept/reject the whole bundle.
-- Multi-quantity *offered* (offered side is always exactly one sticker per trade).
 - Image uploads or sticker condition tracking.
 
 ## Architecture
@@ -85,8 +86,8 @@ One document per allowed admin. UID is the Firebase Auth UID.
 {
   status: 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'completed' | 'cancelled'
   trades: Array<{
-    offered: string                            // sticker code from owner's Missing
-    requested: Array<{ code: string; qty: number }>  // 1+ entries; sum(qty) ∈ [1, 5]
+    offered: string[]                          // 1+ unique sticker codes from owner's Missing
+    requested: Array<{ code: string; qty: number }>  // 1+ entries
   }>
   proposer: { name: string; contact: string }
   proposerNote: string | null
@@ -116,7 +117,7 @@ One document per allowed admin. UID is the Firebase Auth UID.
 Reservation aggregates are computed in memory from the live proposal subscription, never denormalized into sticker docs:
 
 ```
-incomingReserved[code] = count of accepted proposals where any trade.offered == code
+incomingReserved[code] = count of accepted proposals where code appears in any trade.offered[] array
 outgoingReserved[code] = sum of qty across all accepted proposals' trade.requested[*] for that code
 ```
 
@@ -129,10 +130,13 @@ Lists are bounded (~960 stickers, expected < 50 active proposals). The marketpla
 
 **Proposal form rules** (validated client-side, structurally checked by Firestore rules):
 
-- Each trade: `offered` must be a code currently in Missing **and** `incomingReserved[code] === 0` (no double-promising the same incoming sticker).
-- Each `requested[i].qty` ≤ available spares for that code at submission time.
-- Per-trade: `sum(requested.qty) ∈ [1, 5]`.
-- Proposal-level: `trades.length ≥ 1`; offered codes unique across all trades within the proposal.
+- Each trade:
+  - `offered.length ≥ 1`; every code currently in Missing **and** `incomingReserved[code] === 0` (no double-promising the same incoming sticker); offered codes unique within the trade.
+  - `requested.length ≥ 1`; each `requested[i].qty ≥ 1` and `≤` available spares for that code at submission time.
+  - **Ratio constraint:** `min(offered.length, sum(requested.qty)) === 1`. Equivalently, the trade is valid iff one of:
+    - **1 : M** — `offered.length === 1` and `sum(requested.qty) ∈ [1, 5]`, or
+    - **N : 1** — `sum(requested.qty) === 1` and `offered.length ≥ 1` (client-side sanity cap of 50 to prevent UI runaway; no Firestore-rule cap).
+- Proposal-level: `trades.length ≥ 1`; offered codes unique across all trades within the proposal (the same missing sticker can't be offered twice in one bundle).
 
 ## Public marketplace UI
 
@@ -156,9 +160,13 @@ Single form holding a list of trade rows (start with 1; "Add another trade" butt
 
 Each trade row:
 
-- **Offered:** single picker that searches Missing-where-not-already-reserved-incoming. Click to pick. Exactly one offered sticker per trade.
-- **Requested:** 1–5 picks from Doubles. Each pick is `{code, qty}` with a qty stepper bounded by the code's available spares. Running total: `2 / 5 requested`.
-- **Per-trade ratio badge:** `1 : 3` — green when valid, red and submission disabled when `sum(requested.qty)` is 0 or > 5.
+- **Offered:** picker that searches Missing-where-not-already-reserved-incoming. Click to add codes; each chip is removable. Trade can hold 1+ offered codes.
+- **Requested:** picker over Doubles. Each pick is `{code, qty}` with a qty stepper bounded by the code's available spares. Trade can hold 1+ requested entries.
+- **Ratio constraint:** one side must equal 1.
+  - When `offered.length === 1`, `sum(requested.qty)` is allowed up to 5; the qty stepper enforces this and shows a running total `2 / 5 requested`.
+  - When `offered.length > 1`, the requested side is forced to a single entry with `qty === 1`; the UI locks the qty stepper at 1 and disables adding a second requested entry, with an inline hint ("Multiple offered → exactly 1 requested").
+  - When `sum(requested.qty) > 1` and the user tries to add a second offered chip, the picker prompts to either remove the extra requested first or switch to N:1 mode.
+- **Per-trade ratio badge:** shows the current shape — `1 : 3`, `4 : 1`, etc. Green when valid; red with submission disabled when the constraint is violated.
 
 Below the trades:
 
