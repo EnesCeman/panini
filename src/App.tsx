@@ -5,6 +5,7 @@ import { Toaster } from '@/components/Toaster'
 import { subscribeProposals, subscribeStickers } from '@/lib/state'
 import { Doubles } from '@/pages/Doubles'
 import { Home } from '@/pages/Home'
+import { Inbox } from '@/pages/inbox/Inbox'
 import { Missing } from '@/pages/Missing'
 import { Players } from '@/pages/Players'
 import { TeamDetail } from '@/pages/TeamDetail'
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/missing" element={<Missing />} />
           <Route path="/doubles" element={<Doubles />} />
           <Route path="/players" element={<Players />} />
+          <Route path="/inbox" element={<Inbox />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <TabBar />
