@@ -67,7 +67,7 @@ export function TradeRow({
 
       <section className="mb-3">
         <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-          I offer (cards you're missing)
+          Cards you're offering (from my missing list)
         </h4>
         <div className="flex flex-wrap gap-2">
           {trade.offered.map((code) => {
