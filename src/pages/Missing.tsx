@@ -10,15 +10,13 @@ import { StickerSheet } from '@/components/StickerSheet'
 import { TEAMS, stickerKind } from '@/data/teams'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
-import { useReservations, useStickersMap } from '@/lib/state'
+import { useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
-import { ReservationBadge } from '@/components/market/ReservationBadge'
 
 type MissingItem = { code: string; teamCode: string; num: number; name: string | null }
 
 export function Missing() {
   const stickers = useStickersMap()
-  const { incoming } = useReservations()
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
   const [openCode, setOpenCode] = useState<string | null>(null)
@@ -150,9 +148,6 @@ export function Missing() {
                       <span className="min-w-0 flex-1 truncate text-sm text-neutral-900">
                         {labelFor(s.code, s.num, s.name)}
                       </span>
-                      {(incoming.get(s.code) ?? 0) > 0 && (
-                        <ReservationBadge kind="incoming" reserved={incoming.get(s.code)} className="mr-2" />
-                      )}
                       <span className="text-xs tabular-nums text-neutral-400">{s.code}</span>
                     </button>
                   </li>

@@ -1,7 +1,6 @@
 import { BookOpen, CircleDashed, Home, Inbox as InboxIcon, Layers } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useIsAdmin } from '@/lib/auth'
-import { usePendingCount } from '@/lib/state'
 import { cn } from '@/lib/utils'
 
 const BASE_TABS = [
@@ -13,7 +12,6 @@ const BASE_TABS = [
 
 export function TabBar() {
   const admin = useIsAdmin()
-  const pending = usePendingCount()
   const showInbox = admin.status === 'admin'
 
   return (
@@ -53,14 +51,7 @@ export function TabBar() {
         >
           {({ isActive }) => (
             <>
-              <div className="relative">
-                <InboxIcon className={cn('h-5 w-5', isActive && 'stroke-[2.4]')} />
-                {pending > 0 && (
-                  <span className="absolute -right-2 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
-                    {pending}
-                  </span>
-                )}
-              </div>
+              <InboxIcon className={cn('h-5 w-5', isActive && 'stroke-[2.4]')} />
               <span>Inbox</span>
             </>
           )}

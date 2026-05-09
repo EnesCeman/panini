@@ -10,10 +10,8 @@ import { StickerSheet } from '@/components/StickerSheet'
 import { TEAMS, stickerKind } from '@/data/teams'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
-import { useReservations, useStickersMap } from '@/lib/state'
-import { availableSpare } from '@/lib/reservations'
+import { useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
-import { ReservationBadge } from '@/components/market/ReservationBadge'
 
 type DoubleItem = {
   code: string
@@ -25,7 +23,6 @@ type DoubleItem = {
 
 export function Doubles() {
   const stickers = useStickersMap()
-  const { outgoing } = useReservations()
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
   const [openCode, setOpenCode] = useState<string | null>(null)
@@ -162,28 +159,12 @@ export function Doubles() {
                           {labelFor(s.code, s.num, s.name)}
                         </div>
                         <div className="text-[11px] tabular-nums text-neutral-500">
-                          {s.code} · {availableSpare(s.count, outgoing.get(s.code) ?? 0)} of {s.count - 1} spare
+                          {s.code} · {s.count - 1} spare
                         </div>
                       </div>
-                      {(() => {
-                        const reserved = outgoing.get(s.code) ?? 0
-                        const available = availableSpare(s.count, reserved)
-                        if (available === 0) {
-                          return <ReservationBadge kind="all-reserved" />
-                        }
-                        if (reserved > 0) {
-                          return (
-                            <span className="inline-flex h-7 min-w-9 items-center justify-center rounded-full bg-amber-500 px-2 text-xs font-bold text-white">
-                              x{available}
-                            </span>
-                          )
-                        }
-                        return (
-                          <span className="inline-flex h-7 min-w-9 items-center justify-center rounded-full bg-amber-500 px-2 text-xs font-bold text-white">
-                            x{s.count}
-                          </span>
-                        )
-                      })()}
+                      <span className="inline-flex h-7 min-w-9 items-center justify-center rounded-full bg-amber-500 px-2 text-xs font-bold text-white">
+                        x{s.count}
+                      </span>
                     </button>
                   </li>
                 ))}

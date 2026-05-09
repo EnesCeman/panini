@@ -3,8 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { TabBar } from '@/components/TabBar'
 import { Toaster } from '@/components/Toaster'
 import { useIsAdmin } from '@/lib/auth'
-import { LocaleProvider } from '@/lib/i18n'
-import { subscribeProposals, subscribeStickers } from '@/lib/state'
+import { subscribeStickers } from '@/lib/state'
 import { Cards } from '@/pages/Cards'
 import { Doubles } from '@/pages/Doubles'
 import { Home } from '@/pages/Home'
@@ -26,25 +25,11 @@ export default function App() {
   const onInbox = isInboxPath(path)
 
   useEffect(() => {
-    const unsubStickers = subscribeStickers()
-    const unsubProposals = subscribeProposals()
+    const unsub = subscribeStickers()
     return () => {
-      unsubStickers()
-      unsubProposals()
+      unsub()
     }
   }, [])
-
-  useEffect(() => {
-    // /inbox is the sign-in entry point — never redirect away from it,
-    // otherwise the admin can never reach the AuthGate to sign in.
-    if (onInbox) return
-    if (
-      adminCheck.status === 'not-signed-in' ||
-      adminCheck.status === 'not-admin'
-    ) {
-      window.location.replace('/market')
-    }
-  }, [adminCheck, onInbox])
 
   if (adminCheck.status === 'loading') {
     return (
@@ -56,30 +41,35 @@ export default function App() {
 
   if (adminCheck.status !== 'admin' && !onInbox) {
     return (
-      <div className="flex min-h-dvh items-center justify-center text-sm text-neutral-500">
-        Redirecting to marketplace…
+      <div className="mx-auto flex min-h-dvh max-w-md items-center justify-center bg-neutral-50 px-6 text-center">
+        <div className="space-y-2">
+          <h1 className="text-lg font-semibold text-neutral-900">
+            Sticker swap is being rebuilt
+          </h1>
+          <p className="text-sm text-neutral-600">
+            Check back soon — a simpler version is on the way.
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <LocaleProvider>
-      <BrowserRouter>
-        <div className="mx-auto min-h-dvh max-w-md bg-neutral-50">
-          <Toaster />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/team/:code" element={<TeamDetail />} />
-            <Route path="/missing" element={<Missing />} />
-            <Route path="/doubles" element={<Doubles />} />
-            <Route path="/cards" element={<Cards />} />
-            <Route path="/players" element={<Navigate to="/cards" replace />} />
-            <Route path="/inbox" element={<Inbox />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          <TabBar />
-        </div>
-      </BrowserRouter>
-    </LocaleProvider>
+    <BrowserRouter>
+      <div className="mx-auto min-h-dvh max-w-md bg-neutral-50">
+        <Toaster />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/team/:code" element={<TeamDetail />} />
+          <Route path="/missing" element={<Missing />} />
+          <Route path="/doubles" element={<Doubles />} />
+          <Route path="/cards" element={<Cards />} />
+          <Route path="/players" element={<Navigate to="/cards" replace />} />
+          <Route path="/inbox" element={<Inbox />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <TabBar />
+      </div>
+    </BrowserRouter>
   )
 }
