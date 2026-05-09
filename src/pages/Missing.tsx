@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Flag } from '@/components/Flag'
@@ -80,12 +81,13 @@ export function Missing() {
               <div className="mb-2 flex items-center gap-2">
                 <Link
                   to={`/team/${team.code}`}
-                  className="-mx-1 flex min-w-0 items-center gap-2 rounded px-1 py-0.5 active:bg-neutral-200"
+                  className="group -mx-1 flex min-w-0 items-center gap-2 rounded px-1 py-0.5 active:bg-neutral-200"
                 >
                   <Flag code={team.code} className="h-4 w-6" />
-                  <span className="text-sm font-semibold text-neutral-900 hover:underline">
+                  <span className="text-sm font-semibold text-neutral-900 group-hover:underline">
                     {team.name}
                   </span>
+                  <ChevronRight className="h-3.5 w-3.5 text-neutral-400 transition group-hover:text-neutral-600" />
                 </Link>
                 <GroupPill group={team.group} />
                 <span className="ml-auto text-xs tabular-nums text-neutral-500">
