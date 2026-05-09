@@ -78,22 +78,23 @@ export function Missing() {
         <div className="flex flex-col gap-5 px-4 pt-4">
           {grouped.map(({ team, items }) => (
             <section key={team.code}>
-              <div className="mb-2 flex items-center gap-2">
-                <Link
-                  to={`/team/${team.code}`}
-                  className="group -mx-1 flex min-w-0 items-center gap-2 rounded px-1 py-0.5 active:bg-neutral-200"
-                >
-                  <Flag code={team.code} className="h-4 w-6" />
-                  <span className="text-sm font-semibold text-neutral-900 group-hover:underline">
-                    {team.name}
-                  </span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-neutral-500 transition group-hover:text-neutral-700" strokeWidth={2.5} />
-                </Link>
+              <Link
+                to={`/team/${team.code}`}
+                className="group mb-2 -mx-1 flex items-center gap-2 rounded px-1 py-0.5 active:bg-neutral-200"
+              >
+                <Flag code={team.code} className="h-4 w-6 shrink-0" />
+                <span className="truncate text-sm font-semibold text-neutral-900 group-hover:underline">
+                  {team.name}
+                </span>
                 <GroupPill group={team.group} />
                 <span className="ml-auto text-xs tabular-nums text-neutral-500">
                   {items.length}
                 </span>
-              </div>
+                <ChevronRight
+                  className="h-4 w-4 shrink-0 text-neutral-400 transition group-hover:text-neutral-700"
+                  strokeWidth={2.5}
+                />
+              </Link>
               <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                 {items.map((s, idx) => (
                   <li
