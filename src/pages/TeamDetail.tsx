@@ -9,21 +9,23 @@ import { Button } from '@/components/ui/button'
 import { teamByCode } from '@/data/teams'
 import { incrementMany, useTeamProgress } from '@/lib/state'
 
-// Sticker layout that mirrors the printed album spread:
-//   row 1: 1, 2 (top of left page)
+// Sticker layout that mirrors the printed album spread. In the physical
+// album the team title sits on the left of row 1 and the group panel on
+// the left of row 6, so stickers 1, 2 and 18, 19, 20 are right-aligned.
+//   row 1:           1, 2 (top of left page, after team title block)
 //   row 2: 3, 4, 5, 6
 //   row 3: 7, 8, 9, 10
 //   row 4: 11, 12, 13 (team photo, span 2 cols)
 //   row 5: 14, 15, 16, 17
-//   row 6: 18, 19, 20
+//   row 6:    18, 19, 20 (after group panel)
 // `null` entries are intentional empty cells in the 4-col grid.
 const ALBUM_LAYOUT: Array<number | null> = [
-  1, 2, null, null,
+  null, null, 1, 2,
   3, 4, 5, 6,
   7, 8, 9, 10,
   11, 12, 13,
   14, 15, 16, 17,
-  18, 19, 20, null,
+  null, 18, 19, 20,
 ]
 
 export function TeamDetail() {
