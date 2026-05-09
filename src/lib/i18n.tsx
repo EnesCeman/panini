@@ -21,23 +21,23 @@ const translations = {
     'shell.lang.toggle': 'Language',
 
     // Browse — tabs
-    'browse.tab.spares': 'Doubles · {count}',
+    'browse.tab.spares': 'Duplicates · {count}',
     'browse.tab.missing': 'Missing · {count}',
 
     // Browse — intro
     'browse.intro.title': 'Hey! Looking to swap World Cup stickers?',
     'browse.intro.lead':
-      'Tabs below: my doubles (cards I have spare for swap) and my missing (cards I still need). Tap any to start a proposal with it pre-selected.',
+      'Tabs below: my duplicates (cards I have spare for swap) and my missing (cards I still need). Tap any to start a proposal with it pre-selected.',
     'browse.intro.howTitle': 'How to build a trade',
     'browse.intro.howOffer':
-      "Start with what you'd offer: tap a card from Cards I'm missing, then multi-select which of my doubles you want in return.",
+      "Start with what you'd offer: tap a card from Cards I'm missing, then multi-select which of my duplicates you want in return.",
     'browse.intro.howWant':
-      'Or start with what you want: tap a card from My doubles, then multi-select which of my missing you’d send my way.',
+      'Or start with what you want: tap a card from My duplicates, then multi-select which of my missing you’d send my way.',
     'browse.intro.ratioTitle': 'Per-trade ratio (one side must equal 1)',
     'browse.intro.ratio1m':
-      '1 of yours → up to 5 of mine (offer one card I need for up to five of my doubles).',
+      '1 of yours → up to 5 of mine (offer one card I need for up to five of my duplicates).',
     'browse.intro.ratioN1':
-      'Many of yours → exactly 1 of mine (sweeten the deal: send several cards I need for one specific double of mine).',
+      'Many of yours → exactly 1 of mine (sweeten the deal: send several cards I need for one specific duplicate of mine).',
     'browse.intro.otherTitle': 'Other things to know',
     'browse.intro.otherBundle':
       'You can bundle multiple trades into a single proposal — add as many trades as you want before submitting.',
@@ -49,7 +49,7 @@ const translations = {
       "Whether to accept is up to me — your proposal lands in my inbox and I'll review it.",
 
     // Browse — sections
-    'browse.section.spares.title': 'My doubles ({count})',
+    'browse.section.spares.title': 'My duplicates ({count})',
     'browse.section.spares.subtitle':
       'Anything you want? Tap a team to expand, then tap a card.',
     'browse.section.missing.title': "Cards I'm missing ({count})",
@@ -84,8 +84,8 @@ const translations = {
     'trade.row.remove': 'Remove trade',
     'trade.offer.label': "Cards you're offering (from my missing list)",
     'trade.offer.add': 'Add cards to offer',
-    'trade.offer.multiHint': 'Multiple offered → pick exactly 1 of my doubles below.',
-    'trade.want.label': 'Cards you want from me ({total} / {max} of my doubles)',
+    'trade.offer.multiHint': 'Multiple offered → pick exactly 1 of my duplicates below.',
+    'trade.want.label': 'Cards you want from me ({total} / {max} of my duplicates)',
     'trade.want.add': 'Add cards you want',
     'trade.want.spareCount': '{available} available',
     'trade.qty.dec': 'Decrement qty',

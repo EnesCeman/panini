@@ -8,7 +8,7 @@ const BASE_TABS = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/cards', label: 'Cards', icon: BookOpen },
   { to: '/missing', label: 'Missing', icon: CircleDashed },
-  { to: '/doubles', label: 'Doubles', icon: Layers },
+  { to: '/doubles', label: 'Duplicates', icon: Layers },
 ] as const
 
 export function TabBar() {
