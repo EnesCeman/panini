@@ -1,8 +1,8 @@
 import { Plus } from 'lucide-react'
 import { useRef, useState, type FormEvent } from 'react'
+import { TeamCombo } from '@/components/TeamCombo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { GROUPS, TEAMS } from '@/data/teams'
 import { incrementSticker } from '@/lib/state'
 
 export function QuickAdd() {
@@ -23,23 +23,14 @@ export function QuickAdd() {
 
   return (
     <form onSubmit={submit} className="flex items-stretch gap-2">
-      <select
+      <TeamCombo
         value={team}
-        onChange={(e) => setTeam(e.target.value)}
-        aria-label="Team"
-        className="flex h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <option value="">Team…</option>
-        {GROUPS.map((g) => (
-          <optgroup key={g} label={`Group ${g}`}>
-            {TEAMS.filter((t) => t.group === g).map((t) => (
-              <option key={t.code} value={t.code}>
-                {t.name} ({t.code})
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
+        onChange={(code) => {
+          setTeam(code)
+          numRef.current?.focus()
+        }}
+        className="min-w-0 flex-1"
+      />
       <Input
         ref={numRef}
         type="number"
