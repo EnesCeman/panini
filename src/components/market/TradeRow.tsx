@@ -217,15 +217,16 @@ export function TradeRow({
 
       {openPicker === 'offered' && (
         <StickerPicker
-          title="Pick a sticker you have to offer"
+          multiSelect
+          title="Pick stickers you have to offer"
           predicate={(code, count) =>
             count === 0 && (incoming.get(code) ?? 0) === 0
           }
           exclude={
             new Set([...trade.offered, ...excludedOfferedAcrossProposal])
           }
-          onPick={(code) => {
-            onChange({ ...trade, offered: [...trade.offered, code] })
+          onPickMany={(codes) => {
+            onChange({ ...trade, offered: [...trade.offered, ...codes] })
             setOpenPicker(null)
           }}
           onClose={() => setOpenPicker(null)}
@@ -234,17 +235,22 @@ export function TradeRow({
 
       {openPicker === 'requested' && (
         <StickerPicker
-          title="Pick a sticker you want"
+          multiSelect
+          maxSelection={Math.max(0, 5 - totalRequested)}
+          title="Pick stickers you want"
           predicate={(code, count) => {
             if (count < 2) return false
             const out = outgoing.get(code) ?? 0
             return availableSpare(count, out) > 0
           }}
           exclude={new Set(trade.requested.map((r) => r.code))}
-          onPick={(code) => {
+          onPickMany={(codes) => {
             onChange({
               ...trade,
-              requested: [...trade.requested, { code, qty: 1 }],
+              requested: [
+                ...trade.requested,
+                ...codes.map((code) => ({ code, qty: 1 })),
+              ],
             })
             setOpenPicker(null)
           }}
