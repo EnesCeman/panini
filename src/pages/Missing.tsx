@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Flag } from '@/components/Flag'
 import { GroupPill } from '@/components/GroupPill'
 import { SearchBar } from '@/components/SearchBar'
@@ -108,8 +109,15 @@ export function Missing() {
           {grouped.map(({ team, items }) => (
             <section key={team.code}>
               <div className="mb-2 flex items-center gap-2">
-                <Flag code={team.code} className="h-4 w-6" />
-                <span className="text-sm font-semibold text-neutral-900">{team.name}</span>
+                <Link
+                  to={`/team/${team.code}`}
+                  className="-mx-1 flex min-w-0 items-center gap-2 rounded px-1 py-0.5 active:bg-neutral-200"
+                >
+                  <Flag code={team.code} className="h-4 w-6" />
+                  <span className="text-sm font-semibold text-neutral-900 hover:underline">
+                    {team.name}
+                  </span>
+                </Link>
                 <GroupPill group={team.group} />
                 <span className="ml-auto text-xs tabular-nums text-neutral-500">
                   {items.length}
