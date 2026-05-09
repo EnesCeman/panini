@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CodeSearchInput } from '@/components/CodeSearchInput'
 import { Flag } from '@/components/Flag'
 import { GroupPill } from '@/components/GroupPill'
 import { SearchBar } from '@/components/SearchBar'
 import { ReservationBadge } from '@/components/market/ReservationBadge'
 import { Button } from '@/components/ui/button'
 import { TEAMS, stickerKind } from '@/data/teams'
-import { applyAutoDash } from '@/lib/autoDash'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { availableSpare } from '@/lib/reservations'
@@ -14,8 +14,6 @@ import { useReservations, useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
 
 type SearchMode = 'name' | 'code'
-
-const TEAM_CODE_SET = new Set(TEAMS.map((t) => t.code))
 
 type Item = {
   code: string
@@ -152,11 +150,30 @@ function matchesQuery(
   )
 }
 
+function scrollStickyIntoView(el: HTMLElement | null) {
+  if (!el) return
+  const top = el.getBoundingClientRect().top + window.scrollY - 60
+  window.scrollTo({ top, behavior: 'smooth' })
+}
+
 function MissingSection() {
   const stickers = useStickersMap()
   const { incoming } = useReservations()
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
+  const stickyRef = useRef<HTMLDivElement>(null)
+
+  function handleQueryChange(v: string) {
+    if (query.length === 0 && v.length > 0) {
+      scrollStickyIntoView(stickyRef.current)
+    }
+    setQuery(v)
+  }
+
+  function handleModeChange(m: SearchMode) {
+    setMode(m)
+    setQuery('')
+  }
 
   const items = useMemo<Item[]>(() => {
     const out: Item[] = []
@@ -189,24 +206,31 @@ function MissingSection() {
 
   return (
     <section>
-      <header className="mb-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-neutral-900">
-            Cards I'm missing ({items.length})
-          </h2>
-          <ModeToggle mode={mode} onChange={setMode} />
-        </div>
-        <p className="mt-1 text-[11px] text-neutral-500">
-          You might have one of these? Search or scroll, then tap to start a swap.
-        </p>
-      </header>
-      <SearchBar
-        value={query}
-        onChange={(v) =>
-          setQuery(mode === 'code' ? applyAutoDash(v, TEAM_CODE_SET) : v)
-        }
-        placeholder={mode === 'code' ? 'Code, e.g. POR-5' : 'Player, team…'}
-      />
+      <div
+        ref={stickyRef}
+        className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6"
+      >
+        <header className="mb-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-neutral-900">
+              Cards I'm missing ({items.length})
+            </h2>
+            <ModeToggle mode={mode} onChange={handleModeChange} />
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-500">
+            You might have one of these? Search or scroll, then tap to start a swap.
+          </p>
+        </header>
+        {mode === 'code' ? (
+          <CodeSearchInput value={query} onChange={handleQueryChange} />
+        ) : (
+          <SearchBar
+            value={query}
+            onChange={handleQueryChange}
+            placeholder="Player, team…"
+          />
+        )}
+      </div>
       <div className="mt-3 flex flex-col gap-4">
         {grouped.length === 0 ? (
           <p className="py-6 text-center text-xs text-neutral-500">No matches</p>
@@ -259,6 +283,19 @@ function DoublesSection() {
   const { outgoing } = useReservations()
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
+  const stickyRef = useRef<HTMLDivElement>(null)
+
+  function handleQueryChange(v: string) {
+    if (query.length === 0 && v.length > 0) {
+      scrollStickyIntoView(stickyRef.current)
+    }
+    setQuery(v)
+  }
+
+  function handleModeChange(m: SearchMode) {
+    setMode(m)
+    setQuery('')
+  }
 
   type DItem = Item & { count: number; available: number }
 
@@ -302,24 +339,31 @@ function DoublesSection() {
 
   return (
     <section>
-      <header className="mb-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-neutral-900">
-            Cards I have spare ({totalSpare})
-          </h2>
-          <ModeToggle mode={mode} onChange={setMode} />
-        </div>
-        <p className="mt-1 text-[11px] text-neutral-500">
-          Anything you want? Tap to include it in your proposal.
-        </p>
-      </header>
-      <SearchBar
-        value={query}
-        onChange={(v) =>
-          setQuery(mode === 'code' ? applyAutoDash(v, TEAM_CODE_SET) : v)
-        }
-        placeholder={mode === 'code' ? 'Code, e.g. POR-5' : 'Player, team…'}
-      />
+      <div
+        ref={stickyRef}
+        className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6"
+      >
+        <header className="mb-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-neutral-900">
+              Cards I have spare ({totalSpare})
+            </h2>
+            <ModeToggle mode={mode} onChange={handleModeChange} />
+          </div>
+          <p className="mt-1 text-[11px] text-neutral-500">
+            Anything you want? Tap to include it in your proposal.
+          </p>
+        </header>
+        {mode === 'code' ? (
+          <CodeSearchInput value={query} onChange={handleQueryChange} />
+        ) : (
+          <SearchBar
+            value={query}
+            onChange={handleQueryChange}
+            placeholder="Player, team…"
+          />
+        )}
+      </div>
       <div className="mt-3 flex flex-col gap-4">
         {grouped.length === 0 ? (
           <p className="py-6 text-center text-xs text-neutral-500">No matches</p>

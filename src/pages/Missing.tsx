@@ -1,9 +1,11 @@
 import { ChevronRight } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CodeSearchInput } from '@/components/CodeSearchInput'
 import { Flag } from '@/components/Flag'
 import { GroupPill } from '@/components/GroupPill'
 import { SearchBar } from '@/components/SearchBar'
+import { SearchModeToggle, type SearchMode } from '@/components/SearchModeToggle'
 import { StickerSheet } from '@/components/StickerSheet'
 import { TEAMS, stickerKind } from '@/data/teams'
 import { normalizeForSearch } from '@/lib/normalize'
@@ -18,6 +20,7 @@ export function Missing() {
   const stickers = useStickersMap()
   const { incoming } = useReservations()
   const [query, setQuery] = useState('')
+  const [mode, setMode] = useState<SearchMode>('name')
   const [openCode, setOpenCode] = useState<string | null>(null)
 
   const allMissing = useMemo<MissingItem[]>(() => {
@@ -35,18 +38,22 @@ export function Missing() {
   }, [stickers])
 
   const grouped = useMemo(() => {
-    const q = normalizeForSearch(query)
     const map = new Map<string, MissingItem[]>()
     for (const item of allMissing) {
       const team = TEAMS.find((t) => t.code === item.teamCode)
       if (!team) continue
-      if (q.length > 0) {
-        const album = albumPlayerName(item.code)
-        const matches =
-          normalizeForSearch(item.code).includes(q) ||
-          (!!item.name && normalizeForSearch(item.name).includes(q)) ||
-          (!!album && normalizeForSearch(album).includes(q)) ||
-          normalizeForSearch(team.name).includes(q)
+      if (query.length > 0) {
+        let matches: boolean
+        if (mode === 'code') {
+          matches = item.code.toUpperCase().includes(query.toUpperCase())
+        } else {
+          const q = normalizeForSearch(query)
+          const album = albumPlayerName(item.code)
+          matches =
+            (!!item.name && normalizeForSearch(item.name).includes(q)) ||
+            (!!album && normalizeForSearch(album).includes(q)) ||
+            normalizeForSearch(team.name).includes(q)
+        }
         if (!matches) continue
       }
       const list = map.get(item.teamCode) ?? []
@@ -56,20 +63,45 @@ export function Missing() {
     return TEAMS.map((t) => ({ team: t, items: map.get(t.code) ?? [] }))
       .filter((g) => g.items.length > 0)
       .sort((a, b) => a.team.name.localeCompare(b.team.name))
-  }, [allMissing, query])
+  }, [allMissing, query, mode])
+
+  const headerRef = useRef<HTMLElement>(null)
+
+  function handleQueryChange(v: string) {
+    if (query.length === 0 && v.length > 0 && headerRef.current) {
+      const top = headerRef.current.getBoundingClientRect().top + window.scrollY
+      window.scrollTo({ top, behavior: 'smooth' })
+    }
+    setQuery(v)
+  }
+
+  function handleModeChange(m: SearchMode) {
+    setMode(m)
+    setQuery('')
+  }
 
   return (
     <div className="pb-24">
       <header
+        ref={headerRef}
         className="sticky top-0 z-20 flex flex-col gap-3 border-b border-neutral-200 bg-neutral-50 px-4 pb-3"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >
-        <h1 className="text-lg font-semibold text-neutral-900">Missing {allMissing.length}</h1>
-        <SearchBar
-          value={query}
-          onChange={setQuery}
-          placeholder="Search by code, name, or team"
-        />
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-lg font-semibold text-neutral-900">
+            Missing {allMissing.length}
+          </h1>
+          <SearchModeToggle mode={mode} onChange={handleModeChange} />
+        </div>
+        {mode === 'code' ? (
+          <CodeSearchInput value={query} onChange={handleQueryChange} />
+        ) : (
+          <SearchBar
+            value={query}
+            onChange={handleQueryChange}
+            placeholder="Player, team…"
+          />
+        )}
       </header>
 
       {allMissing.length === 0 ? (

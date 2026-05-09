@@ -4,11 +4,11 @@ import { TabBar } from '@/components/TabBar'
 import { Toaster } from '@/components/Toaster'
 import { useIsAdmin } from '@/lib/auth'
 import { subscribeProposals, subscribeStickers } from '@/lib/state'
+import { Cards } from '@/pages/Cards'
 import { Doubles } from '@/pages/Doubles'
 import { Home } from '@/pages/Home'
 import { Inbox } from '@/pages/inbox/Inbox'
 import { Missing } from '@/pages/Missing'
-import { Players } from '@/pages/Players'
 import { TeamDetail } from '@/pages/TeamDetail'
 
 export default function App() {
@@ -57,7 +57,8 @@ export default function App() {
           <Route path="/team/:code" element={<TeamDetail />} />
           <Route path="/missing" element={<Missing />} />
           <Route path="/doubles" element={<Doubles />} />
-          <Route path="/players" element={<Players />} />
+          <Route path="/cards" element={<Cards />} />
+          <Route path="/players" element={<Navigate to="/cards" replace />} />
           <Route path="/inbox" element={<Inbox />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

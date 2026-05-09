@@ -1,4 +1,4 @@
-import { CircleDashed, Home, Inbox as InboxIcon, Layers, Users } from 'lucide-react'
+import { BookOpen, CircleDashed, Home, Inbox as InboxIcon, Layers } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useIsAdmin } from '@/lib/auth'
 import { usePendingCount } from '@/lib/state'
@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 const BASE_TABS = [
   { to: '/', label: 'Home', icon: Home },
-  { to: '/players', label: 'Players', icon: Users },
+  { to: '/cards', label: 'Cards', icon: BookOpen },
   { to: '/missing', label: 'Missing', icon: CircleDashed },
   { to: '/doubles', label: 'Doubles', icon: Layers },
 ] as const
