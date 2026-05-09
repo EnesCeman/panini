@@ -2,6 +2,8 @@
 
 A mobile-first web app to track progress on a single shared Panini FIFA World Cup 2026 sticker album. Multiple people edit the same global collection. No login, no users, no auth — one shared state, last-write-wins, trust-based.
 
+**Live:** <https://panini-ceman.vercel.app>
+
 ## Firebase setup
 
 1. Create a Firebase project at <https://console.firebase.google.com>.
