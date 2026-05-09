@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { GroupSection } from '@/components/GroupSection'
@@ -54,12 +55,18 @@ function StatTile({
 }) {
   const inner = (
     <>
+      {to && (
+        <ChevronRight
+          className="absolute right-1 top-1 h-3.5 w-3.5 text-neutral-300 transition group-hover:text-neutral-600"
+          strokeWidth={2.5}
+        />
+      )}
       <div className={cn('text-2xl font-bold tabular-nums', accent)}>{value}</div>
       <div className="text-[11px] uppercase tracking-wide text-neutral-500">{label}</div>
     </>
   )
   const className = cn(
-    'block rounded-xl border border-neutral-200 bg-white p-3 text-center shadow-sm',
+    'group relative block rounded-xl border border-neutral-200 bg-white p-3 text-center shadow-sm',
     to && 'transition active:scale-[0.98] active:bg-neutral-50',
   )
   if (to) {
