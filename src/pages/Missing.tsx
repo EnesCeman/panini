@@ -52,9 +52,9 @@ export function Missing() {
       list.push(item)
       map.set(item.teamCode, list)
     }
-    return TEAMS.map((t) => ({ team: t, items: map.get(t.code) ?? [] })).filter(
-      (g) => g.items.length > 0,
-    )
+    return TEAMS.map((t) => ({ team: t, items: map.get(t.code) ?? [] }))
+      .filter((g) => g.items.length > 0)
+      .sort((a, b) => a.team.name.localeCompare(b.team.name))
   }, [allMissing, query, groupFilter])
 
   const toggleGroup = (g: string) => {
