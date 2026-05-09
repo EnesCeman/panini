@@ -6,7 +6,7 @@ import { SearchBar } from '@/components/SearchBar'
 import { StickerSheet } from '@/components/StickerSheet'
 import { GROUPS, TEAMS, stickerKind } from '@/data/teams'
 import { normalizeForSearch } from '@/lib/normalize'
-import { resolvePlayerLabel } from '@/lib/playerName'
+import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
 import { groupColor } from '@/lib/groupColors'
@@ -58,9 +58,11 @@ export function Doubles() {
       if (!team) continue
       if (groupFilter.size > 0 && !groupFilter.has(team.group)) continue
       if (q.length > 0) {
+        const album = albumPlayerName(item.code)
         const matches =
           normalizeForSearch(item.code).includes(q) ||
-          (item.name ? normalizeForSearch(item.name).includes(q) : false) ||
+          (!!item.name && normalizeForSearch(item.name).includes(q)) ||
+          (!!album && normalizeForSearch(album).includes(q)) ||
           normalizeForSearch(team.name).includes(q)
         if (!matches) continue
       }
