@@ -13,7 +13,7 @@ type PlayerEntry = {
   name: string
   team: Team
   count: number
-  source: 'user' | 'album'
+  source: 'user' | 'album' | 'none'
 }
 
 export function Players() {
@@ -21,7 +21,7 @@ export function Players() {
   const [query, setQuery] = useState('')
   const [openCode, setOpenCode] = useState<string | null>(null)
 
-  const allPlayers = useMemo<PlayerEntry[]>(() => {
+  const allSlots = useMemo<PlayerEntry[]>(() => {
     const list: PlayerEntry[] = []
     for (const team of TEAMS) {
       for (let i = 1; i <= 20; i++) {
@@ -30,15 +30,20 @@ export function Players() {
         const sticker = stickers.get(code)
         const userName = sticker?.name ?? null
         const albumName = ALBUM_PLAYER_NAMES[code]
-        const name = userName && userName.length > 0 ? userName : albumName
-        if (!name) continue
+        const hasUserName = !!(userName && userName.length > 0)
+        const name = hasUserName ? userName! : (albumName ?? code)
+        const source: PlayerEntry['source'] = hasUserName
+          ? 'user'
+          : albumName
+            ? 'album'
+            : 'none'
         list.push({
           code,
           num: i,
           name,
           team,
           count: sticker?.count ?? 0,
-          source: userName && userName.length > 0 ? 'user' : 'album',
+          source,
         })
       }
     }
@@ -49,15 +54,20 @@ export function Players() {
     const q = query.trim().toLowerCase()
     const base =
       q.length === 0
-        ? allPlayers
-        : allPlayers.filter(
+        ? allSlots.filter((p) => p.source !== 'none')
+        : allSlots.filter(
             (p) =>
               p.name.toLowerCase().includes(q) ||
               p.team.name.toLowerCase().includes(q) ||
               p.code.toLowerCase().includes(q),
           )
     return [...base].sort((a, b) => a.name.localeCompare(b.name))
-  }, [allPlayers, query])
+  }, [allSlots, query])
+
+  const namedCount = useMemo(
+    () => allSlots.filter((p) => p.source !== 'none').length,
+    [allSlots],
+  )
 
   return (
     <div className="pb-24">
@@ -76,8 +86,8 @@ export function Players() {
         />
       </header>
 
-      {allPlayers.length === 0 ? (
-        <EmptyState message="No player names recorded yet. They'll appear as album data is filled in or you save names in the sticker sheet." />
+      {namedCount === 0 && query.length === 0 ? (
+        <EmptyState message="No player names recorded yet. Type a sticker code (e.g. POR-3) to search any slot, or names will appear here as album data fills in." />
       ) : filtered.length === 0 ? (
         <EmptyState message="No players match" />
       ) : (
@@ -91,10 +101,19 @@ export function Players() {
               >
                 <Flag code={p.team.code} className="h-5 w-7" />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-neutral-900">{p.name}</div>
+                  <div
+                    className={cn(
+                      'truncate text-sm font-medium',
+                      p.source === 'none' ? 'text-neutral-500' : 'text-neutral-900',
+                    )}
+                  >
+                    {p.name}
+                  </div>
                   <div className="truncate text-[11px] text-neutral-500">
-                    {p.team.name} · {p.code}
+                    {p.team.name}
+                    {p.source !== 'none' && ` · ${p.code}`}
                     {p.source === 'user' && ' · custom'}
+                    {p.source === 'none' && ' · no name yet'}
                   </div>
                 </div>
                 <CountBadge count={p.count} />
