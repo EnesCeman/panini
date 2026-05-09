@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom'
 import { GroupSection } from '@/components/GroupSection'
 import { ProgressBar } from '@/components/ProgressBar'
 import { useTotals } from '@/lib/state'
+import { cn } from '@/lib/utils'
 
 export function Home() {
   const { have, missing, doubles, total } = useTotals()
@@ -25,8 +27,8 @@ export function Home() {
 
       <section className="grid grid-cols-3 gap-2">
         <StatTile label="Have" value={have} accent="text-emerald-600" />
-        <StatTile label="Missing" value={missing} accent="text-neutral-700" />
-        <StatTile label="Doubles" value={doubles} accent="text-amber-600" />
+        <StatTile label="Missing" value={missing} accent="text-neutral-700" to="/missing" />
+        <StatTile label="Doubles" value={doubles} accent="text-amber-600" to="/doubles" />
       </section>
 
       <GroupSection />
@@ -34,11 +36,33 @@ export function Home() {
   )
 }
 
-function StatTile({ label, value, accent }: { label: string; value: number; accent: string }) {
-  return (
-    <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center shadow-sm">
-      <div className={`text-2xl font-bold tabular-nums ${accent}`}>{value}</div>
+function StatTile({
+  label,
+  value,
+  accent,
+  to,
+}: {
+  label: string
+  value: number
+  accent: string
+  to?: string
+}) {
+  const inner = (
+    <>
+      <div className={cn('text-2xl font-bold tabular-nums', accent)}>{value}</div>
       <div className="text-[11px] uppercase tracking-wide text-neutral-500">{label}</div>
-    </div>
+    </>
   )
+  const className = cn(
+    'block rounded-xl border border-neutral-200 bg-white p-3 text-center shadow-sm',
+    to && 'transition active:scale-[0.98] active:bg-neutral-50',
+  )
+  if (to) {
+    return (
+      <Link to={to} className={className} aria-label={`${label} (${value}) — open ${label} tab`}>
+        {inner}
+      </Link>
+    )
+  }
+  return <div className={className}>{inner}</div>
 }
