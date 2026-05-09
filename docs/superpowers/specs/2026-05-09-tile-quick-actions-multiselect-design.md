@@ -17,10 +17,11 @@ Adding stickers one at a time currently requires opening a bottom sheet for each
 
 `StickerTile` gains a fixed 2-button footer rendered inside the tile bottom edge.
 
-- Layout: equal-width left and right halves. Left = `−`, right = `+`. Footer height ~32 px. Buttons fill their half and offer a 44 px+ tap target effectively (footer height + tile bottom inset).
+- Layout: equal-width left and right halves. Left = `−`, right = `+`. Footer height 40 px (`h-10`).
+- Tile aspect changes from `aspect-[3/4]` to `aspect-[4/5]` so the content area above the footer keeps roughly the same vertical room it has today (~85 px on a 100 px-wide tile).
+- Each footer button is approximately 50 × 40 px. Vertical tap height is below the 44 px iOS guideline but the +/- buttons are a secondary path; the modal remains the primary editor and offers full-size 48 px controls.
 - `−` is disabled when `count === 0`. `+` is always enabled.
 - Tapping a footer button calls `incrementSticker(code)` or `decrementSticker(code)` directly — no modal, no propagation. Body of the tile (everything above the footer) remains the modal trigger.
-- Tile aspect adjusts from `aspect-[3/4]` to a slightly taller ratio so the existing top-row badges and label area don't compress when the footer is present.
 - In **select mode** (see below) the footer is not rendered.
 
 ### Multi-select on TeamDetail
