@@ -1,6 +1,6 @@
-import { CheckSquare, ChevronLeft, X } from 'lucide-react'
+import { CheckSquare, ChevronLeft, Home as HomeIcon, X } from 'lucide-react'
 import { useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Flag } from '@/components/Flag'
 import { GroupPill } from '@/components/GroupPill'
 import { StickerSheet } from '@/components/StickerSheet'
@@ -30,12 +30,18 @@ const ALBUM_LAYOUT: Array<number | null> = [
 
 export function TeamDetail() {
   const { code = '' } = useParams<{ code: string }>()
+  const navigate = useNavigate()
   const upper = code.toUpperCase()
   const team = teamByCode(upper)
   const { have, total } = useTeamProgress(upper)
   const [openCode, setOpenCode] = useState<string | null>(null)
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1)
+    else navigate('/', { replace: true })
+  }
 
   if (!team) return <Navigate to="/" replace />
 
@@ -101,12 +107,20 @@ export function TeamDetail() {
           className="sticky top-0 z-20 flex items-center gap-3 border-b border-neutral-200 bg-neutral-50 px-3 py-3"
           style={headerStyle}
         >
-          <Link
-            to="/"
+          <button
+            type="button"
+            onClick={goBack}
             aria-label="Back"
             className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 active:bg-neutral-200"
           >
             <ChevronLeft className="h-5 w-5" />
+          </button>
+          <Link
+            to="/"
+            aria-label="Home"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 active:bg-neutral-200"
+          >
+            <HomeIcon className="h-5 w-5" />
           </Link>
           <Flag code={team.code} className="h-5 w-7" />
           <div className="min-w-0 flex-1">
