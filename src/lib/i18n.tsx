@@ -57,6 +57,7 @@ const translations = {
       'You might have one of these? Search or tap a team to expand.',
     'browse.cta.buildCustom': 'Build a custom proposal',
     'browse.noMatches': 'No matches',
+    'browse.row.spareCount': '{available} of {total} spare',
 
     // Search
     'search.placeholder.name': 'Player, team…',
@@ -186,6 +187,7 @@ const translations = {
       'Možda neku od ovih imaš? Pretraži ili klikni tim da raširiš.',
     'browse.cta.buildCustom': 'Napravi vlastiti prijedlog',
     'browse.noMatches': 'Nema rezultata',
+    'browse.row.spareCount': '{available} od {total} duplikata',
 
     // Search
     'search.placeholder.name': 'Igrač, tim…',

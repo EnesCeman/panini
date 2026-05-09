@@ -83,8 +83,16 @@ export function Browse() {
           <MissingSection />
         </div>
       </div>
-      <Link to="/market/new" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
-        <Button className="rounded-full shadow-lg">
+      <Link
+        to="/market/new"
+        className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        <Button
+          className="h-14 rounded-full px-8 text-base font-semibold shadow-xl shadow-neutral-900/30 ring-2 ring-white"
+        >
           {t('browse.cta.buildCustom')}
         </Button>
       </Link>
@@ -577,7 +585,10 @@ function DoublesSection() {
                             {labelFor(s.code, s.num, s.name, t)}
                           </div>
                           <div className="text-[11px] tabular-nums text-neutral-500">
-                            {s.available} of {s.count - 1} spare
+                            {t('browse.row.spareCount', {
+                              available: s.available,
+                              total: s.count - 1,
+                            })}
                           </div>
                         </div>
                         {allReserved ? (
