@@ -6,6 +6,7 @@ import { subscribeStickers } from '@/lib/state'
 import { Doubles } from '@/pages/Doubles'
 import { Home } from '@/pages/Home'
 import { Missing } from '@/pages/Missing'
+import { Players } from '@/pages/Players'
 import { TeamDetail } from '@/pages/TeamDetail'
 import { Teams } from '@/pages/Teams'
 
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/team/:code" element={<TeamDetail />} />
           <Route path="/missing" element={<Missing />} />
           <Route path="/doubles" element={<Doubles />} />
+          <Route path="/players" element={<Players />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <TabBar />
