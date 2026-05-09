@@ -1,13 +1,42 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import 'flag-icons/css/flag-icons.min.css'
+import { Toaster } from '@/components/Toaster'
+import { subscribeProposals, subscribeStickers } from '@/lib/state'
+import { Browse } from '@/pages/market/Browse'
+import { MarketShell } from '@/pages/market/MarketShell'
+import { NewProposal } from '@/pages/market/NewProposal'
+import { ProposalTracking } from '@/pages/market/ProposalTracking'
 import './index.css'
+
+function MarketApp() {
+  useEffect(() => {
+    const unsubStickers = subscribeStickers()
+    const unsubProposals = subscribeProposals()
+    return () => {
+      unsubStickers()
+      unsubProposals()
+    }
+  }, [])
+
+  return (
+    <BrowserRouter>
+      <Toaster />
+      <MarketShell>
+        <Routes>
+          <Route path="/market" element={<Browse />} />
+          <Route path="/market/new" element={<NewProposal />} />
+          <Route path="/market/p/:id" element={<ProposalTracking />} />
+          <Route path="*" element={<Navigate to="/market" replace />} />
+        </Routes>
+      </MarketShell>
+    </BrowserRouter>
+  )
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <div className="mx-auto max-w-md p-6 text-neutral-900">
-      <h1 className="text-xl font-semibold">Marketplace (placeholder)</h1>
-      <p className="mt-2 text-sm text-neutral-600">Wired up later.</p>
-    </div>
+    <MarketApp />
   </StrictMode>,
 )
