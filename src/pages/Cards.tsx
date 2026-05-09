@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { CodeSearchInput } from '@/components/CodeSearchInput'
 import { Flag } from '@/components/Flag'
 import { SearchBar } from '@/components/SearchBar'
@@ -45,6 +45,17 @@ export function Cards() {
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
   const [openCode, setOpenCode] = useState<string | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  function handleQueryChange(v: string) {
+    setQuery(v)
+    if (v.length > 0 && containerRef.current) {
+      const target = containerRef.current.getBoundingClientRect().top + window.scrollY
+      if (window.scrollY > target) {
+        window.scrollTo({ top: target, behavior: 'smooth' })
+      }
+    }
+  }
 
   const allCards = useMemo<CardEntry[]>(() => {
     const list: CardEntry[] = []
@@ -93,7 +104,7 @@ export function Cards() {
   }, [allCards, query, mode])
 
   return (
-    <div className="pb-24">
+    <div className="pb-24" ref={containerRef}>
       <header
         className="sticky top-0 z-20 flex flex-col gap-3 border-b border-neutral-200 bg-neutral-50 px-4 pb-3"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
@@ -112,11 +123,11 @@ export function Cards() {
           </div>
         </div>
         {mode === 'code' ? (
-          <CodeSearchInput value={query} onChange={setQuery} />
+          <CodeSearchInput value={query} onChange={handleQueryChange} />
         ) : (
           <SearchBar
             value={query}
-            onChange={setQuery}
+            onChange={handleQueryChange}
             placeholder="Player, team, badge…"
           />
         )}

@@ -65,14 +65,16 @@ export function Missing() {
       .sort((a, b) => a.team.name.localeCompare(b.team.name))
   }, [allMissing, query, mode])
 
-  const headerRef = useRef<HTMLElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   function handleQueryChange(v: string) {
-    if (query.length === 0 && v.length > 0 && headerRef.current) {
-      const top = headerRef.current.getBoundingClientRect().top + window.scrollY
-      window.scrollTo({ top, behavior: 'smooth' })
-    }
     setQuery(v)
+    if (v.length > 0 && containerRef.current) {
+      const target = containerRef.current.getBoundingClientRect().top + window.scrollY
+      if (window.scrollY > target) {
+        window.scrollTo({ top: target, behavior: 'smooth' })
+      }
+    }
   }
 
   function handleModeChange(m: SearchMode) {
@@ -81,9 +83,8 @@ export function Missing() {
   }
 
   return (
-    <div className="pb-24">
+    <div className="pb-24" ref={containerRef}>
       <header
-        ref={headerRef}
         className="sticky top-0 z-20 flex flex-col gap-3 border-b border-neutral-200 bg-neutral-50 px-4 pb-3"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >

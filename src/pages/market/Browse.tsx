@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
+import { ChevronRight } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { CodeSearchInput } from '@/components/CodeSearchInput'
 import { Flag } from '@/components/Flag'
@@ -6,7 +7,7 @@ import { GroupPill } from '@/components/GroupPill'
 import { SearchBar } from '@/components/SearchBar'
 import { ReservationBadge } from '@/components/market/ReservationBadge'
 import { Button } from '@/components/ui/button'
-import { TEAMS, stickerKind } from '@/data/teams'
+import { TEAMS, stickerKind, type Team } from '@/data/teams'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { availableSpare } from '@/lib/reservations'
@@ -14,6 +15,7 @@ import { useReservations, useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
 
 type SearchMode = 'name' | 'code'
+type MobileTab = 'spares' | 'missing'
 
 type Item = {
   code: string
@@ -29,13 +31,50 @@ function labelFor(code: string, num: number, name: string | null): string {
   return resolvePlayerLabel(code, name)
 }
 
+function useIsMobile(): boolean {
+  const query = '(max-width: 767px)'
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia(query).matches
+  })
+  useEffect(() => {
+    const mql = window.matchMedia(query)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
+  return isMobile
+}
+
 export function Browse() {
+  const stickers = useStickersMap()
+  const [tab, setTab] = useState<MobileTab>('spares')
+
+  const totals = useMemo(() => {
+    let missing = 0
+    let spareUnits = 0
+    for (const team of TEAMS) {
+      for (let i = 1; i <= 20; i++) {
+        const code = `${team.code}-${i}`
+        const sticker = stickers.get(code)
+        if (!sticker || sticker.count === 0) missing += 1
+        if (sticker && sticker.count >= 2) spareUnits += sticker.count - 1
+      }
+    }
+    return { missing, spareUnits }
+  }, [stickers])
+
   return (
     <div className="flex flex-col gap-6 px-4 pt-3 md:px-6">
       <Intro />
+      <MobileTabBar tab={tab} onChange={setTab} totals={totals} />
       <div className="flex flex-col gap-6 md:grid md:grid-cols-2 md:items-start md:gap-6">
-        <DoublesSection />
-        <MissingSection />
+        <div className={cn('md:block', tab !== 'spares' && 'hidden')}>
+          <DoublesSection />
+        </div>
+        <div className={cn('md:block', tab !== 'missing' && 'hidden')}>
+          <MissingSection />
+        </div>
       </div>
       <Link to="/market/new" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
         <Button className="rounded-full shadow-lg">Build a custom proposal</Button>
@@ -44,13 +83,58 @@ export function Browse() {
   )
 }
 
+function MobileTabBar({
+  tab,
+  onChange,
+  totals,
+}: {
+  tab: MobileTab
+  onChange: (t: MobileTab) => void
+  totals: { missing: number; spareUnits: number }
+}) {
+  return (
+    <div className="flex gap-1 rounded-lg border border-neutral-200 bg-white p-1 md:hidden">
+      <TabButton active={tab === 'spares'} onClick={() => onChange('spares')}>
+        Spares · {totals.spareUnits}
+      </TabButton>
+      <TabButton active={tab === 'missing'} onClick={() => onChange('missing')}>
+        Missing · {totals.missing}
+      </TabButton>
+    </div>
+  )
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex-1 rounded-md py-2 text-sm font-medium transition-colors',
+        active ? 'bg-neutral-900 text-white' : 'text-neutral-600',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
 function Intro() {
   return (
     <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
       <p className="font-semibold">Hey! Looking to swap World Cup stickers?</p>
       <p className="mt-2 text-xs text-neutral-600">
-        Below: <strong>cards I'm missing</strong> (left) and{' '}
-        <strong>cards I have spare</strong> (right). Tap any to start.
+        Tabs below: <strong>my spares</strong> (cards I have spare for swap) and{' '}
+        <strong>my missing</strong> (cards I still need). Tap any to start a
+        proposal with it pre-selected.
       </p>
 
       <p className="mt-3 text-xs font-semibold text-neutral-800">How to build a trade</p>
@@ -150,29 +234,85 @@ function matchesQuery(
   )
 }
 
-function scrollStickyIntoView(el: HTMLElement | null) {
-  if (!el) return
-  const top = el.getBoundingClientRect().top + window.scrollY - 60
-  window.scrollTo({ top, behavior: 'smooth' })
+// Scrolls so the section's top sits just below the page header (60px).
+// Anchored on the outer <section> (not the sticky child), because the
+// sticky child reports its pinned position when active, which would
+// produce a no-op scroll. We only pull UP — never yank the user down
+// if they're already above the section.
+function ensureSectionAtTop(sectionEl: HTMLElement | null) {
+  if (!sectionEl) return
+  const target = sectionEl.getBoundingClientRect().top + window.scrollY - 60
+  if (window.scrollY > target) {
+    window.scrollTo({ top: target, behavior: 'smooth' })
+  }
+}
+
+function CollapsibleTeamGroup({
+  team,
+  count,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  team: Team
+  count: number
+  isOpen: boolean
+  onToggle: () => void
+  children: ReactNode
+}) {
+  return (
+    <section>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="-mx-1 flex w-full items-center gap-2 rounded px-1 py-1 text-left active:bg-neutral-100"
+      >
+        <Flag code={team.code} className="h-4 w-6 shrink-0" />
+        <span className="truncate text-sm font-semibold text-neutral-900">
+          {team.name}
+        </span>
+        <GroupPill group={team.group} />
+        <span className="ml-auto text-xs tabular-nums text-neutral-500">{count}</span>
+        <ChevronRight
+          className={cn(
+            'h-4 w-4 shrink-0 text-neutral-400 transition-transform',
+            isOpen && 'rotate-90',
+          )}
+          strokeWidth={2.5}
+        />
+      </button>
+      {isOpen && <div className="mt-1">{children}</div>}
+    </section>
+  )
 }
 
 function MissingSection() {
   const stickers = useStickersMap()
   const { incoming } = useReservations()
+  const isMobile = useIsMobile()
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
-  const stickyRef = useRef<HTMLDivElement>(null)
+  const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map())
+  const sectionRef = useRef<HTMLElement>(null)
 
   function handleQueryChange(v: string) {
-    if (query.length === 0 && v.length > 0) {
-      scrollStickyIntoView(stickyRef.current)
-    }
     setQuery(v)
+    if (v.length > 0) {
+      ensureSectionAtTop(sectionRef.current)
+    }
   }
 
   function handleModeChange(m: SearchMode) {
     setMode(m)
     setQuery('')
+  }
+
+  function toggleTeam(teamCode: string, currentlyOpen: boolean) {
+    setOverrides((prev) => {
+      const next = new Map(prev)
+      next.set(teamCode, !currentlyOpen)
+      return next
+    })
   }
 
   const items = useMemo<Item[]>(() => {
@@ -204,12 +344,11 @@ function MissingSection() {
       .sort((a, b) => a.team.name.localeCompare(b.team.name))
   }, [items, query, mode])
 
+  const searching = query.length > 0
+
   return (
-    <section>
-      <div
-        ref={stickyRef}
-        className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6"
-      >
+    <section ref={sectionRef}>
+      <div className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6">
         <header className="mb-2">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-neutral-900">
@@ -218,7 +357,7 @@ function MissingSection() {
             <ModeToggle mode={mode} onChange={handleModeChange} />
           </div>
           <p className="mt-1 text-[11px] text-neutral-500">
-            You might have one of these? Search or scroll, then tap to start a swap.
+            You might have one of these? Search or tap a team to expand.
           </p>
         </header>
         {mode === 'code' ? (
@@ -231,47 +370,62 @@ function MissingSection() {
           />
         )}
       </div>
-      <div className="mt-3 flex flex-col gap-4">
+      <div className="mt-3 flex flex-col gap-2">
         {grouped.length === 0 ? (
           <p className="py-6 text-center text-xs text-neutral-500">No matches</p>
         ) : (
-          grouped.map(({ team, items }) => (
-            <section key={team.code}>
-              <div className="mb-1 flex items-center gap-2 px-1 py-0.5">
-                <Flag code={team.code} className="h-4 w-6 shrink-0" />
-                <span className="truncate text-sm font-semibold text-neutral-900">
-                  {team.name}
-                </span>
-                <GroupPill group={team.group} />
-              </div>
-              <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
-                {items.map((s, idx) => (
-                  <li
-                    key={s.code}
-                    className={cn(
-                      idx !== items.length - 1 && 'border-b border-neutral-100',
-                    )}
-                  >
-                    <Link
-                      to={`/market/new?offer=${s.code}`}
-                      className="flex items-center gap-3 px-3 py-2 text-left active:bg-neutral-50 hover:bg-neutral-50"
-                    >
-                      <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[11px] font-bold text-neutral-700">
-                        {s.num}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900">
-                        {labelFor(s.code, s.num, s.name)}
-                      </span>
-                      {(incoming.get(s.code) ?? 0) > 0 && (
-                        <ReservationBadge kind="incoming" reserved={incoming.get(s.code)} />
+          grouped.map(({ team, items: teamItems }) => {
+            const hasIncoming = teamItems.some((i) => (incoming.get(i.code) ?? 0) > 0)
+            const override = overrides.get(team.code)
+            const isOpen = searching
+              ? true
+              : override !== undefined
+                ? override
+                : hasIncoming
+                  ? true
+                  : !isMobile
+            return (
+              <CollapsibleTeamGroup
+                key={team.code}
+                team={team}
+                count={teamItems.length}
+                isOpen={isOpen}
+                onToggle={() => toggleTeam(team.code, isOpen)}
+              >
+                <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                  {teamItems.map((s, idx) => (
+                    <li
+                      key={s.code}
+                      className={cn(
+                        idx !== teamItems.length - 1 && 'border-b border-neutral-100',
                       )}
-                      <span className="text-xs tabular-nums text-neutral-400">{s.code}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))
+                    >
+                      <Link
+                        to={`/market/new?offer=${s.code}`}
+                        className="flex items-center gap-3 px-3 py-2 text-left active:bg-neutral-50 hover:bg-neutral-50"
+                      >
+                        <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[11px] font-bold text-neutral-700">
+                          {s.num}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900">
+                          {labelFor(s.code, s.num, s.name)}
+                        </span>
+                        {(incoming.get(s.code) ?? 0) > 0 && (
+                          <ReservationBadge
+                            kind="incoming"
+                            reserved={incoming.get(s.code)}
+                          />
+                        )}
+                        <span className="text-xs tabular-nums text-neutral-400">
+                          {s.code}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleTeamGroup>
+            )
+          })
         )}
       </div>
     </section>
@@ -281,20 +435,30 @@ function MissingSection() {
 function DoublesSection() {
   const stickers = useStickersMap()
   const { outgoing } = useReservations()
+  const isMobile = useIsMobile()
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
-  const stickyRef = useRef<HTMLDivElement>(null)
+  const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map())
+  const sectionRef = useRef<HTMLElement>(null)
 
   function handleQueryChange(v: string) {
-    if (query.length === 0 && v.length > 0) {
-      scrollStickyIntoView(stickyRef.current)
-    }
     setQuery(v)
+    if (v.length > 0) {
+      ensureSectionAtTop(sectionRef.current)
+    }
   }
 
   function handleModeChange(m: SearchMode) {
     setMode(m)
     setQuery('')
+  }
+
+  function toggleTeam(teamCode: string, currentlyOpen: boolean) {
+    setOverrides((prev) => {
+      const next = new Map(prev)
+      next.set(teamCode, !currentlyOpen)
+      return next
+    })
   }
 
   type DItem = Item & { count: number; available: number }
@@ -336,13 +500,11 @@ function DoublesSection() {
   }, [items, query, mode])
 
   const totalSpare = items.reduce((acc, i) => acc + (i.count - 1), 0)
+  const searching = query.length > 0
 
   return (
-    <section>
-      <div
-        ref={stickyRef}
-        className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6"
-      >
+    <section ref={sectionRef}>
+      <div className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6">
         <header className="mb-2">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-neutral-900">
@@ -351,7 +513,7 @@ function DoublesSection() {
             <ModeToggle mode={mode} onChange={handleModeChange} />
           </div>
           <p className="mt-1 text-[11px] text-neutral-500">
-            Anything you want? Tap to include it in your proposal.
+            Anything you want? Tap a team to expand, then tap a card.
           </p>
         </header>
         {mode === 'code' ? (
@@ -364,69 +526,88 @@ function DoublesSection() {
           />
         )}
       </div>
-      <div className="mt-3 flex flex-col gap-4">
+      <div className="mt-3 flex flex-col gap-2">
         {grouped.length === 0 ? (
           <p className="py-6 text-center text-xs text-neutral-500">No matches</p>
         ) : (
-          grouped.map(({ team, items }) => (
-            <section key={team.code}>
-              <div className="mb-1 flex items-center gap-2 px-1 py-0.5">
-                <Flag code={team.code} className="h-4 w-6 shrink-0" />
-                <span className="truncate text-sm font-semibold text-neutral-900">
-                  {team.name}
-                </span>
-                <GroupPill group={team.group} />
-              </div>
-              <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
-                {items.map((s, idx) => {
-                  const reserved = outgoing.get(s.code) ?? 0
-                  const allReserved = s.available === 0
-                  const Row = (
-                    <>
-                      <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[11px] font-bold text-neutral-700">
-                        {s.num}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-neutral-900">
-                          {labelFor(s.code, s.num, s.name)}
+          grouped.map(({ team, items: teamItems }) => {
+            const hasReservations = teamItems.some((s) => {
+              const reserved = outgoing.get(s.code) ?? 0
+              return reserved > 0 || s.available === 0
+            })
+            const override = overrides.get(team.code)
+            const isOpen = searching
+              ? true
+              : override !== undefined
+                ? override
+                : hasReservations
+                  ? true
+                  : !isMobile
+            return (
+              <CollapsibleTeamGroup
+                key={team.code}
+                team={team}
+                count={teamItems.length}
+                isOpen={isOpen}
+                onToggle={() => toggleTeam(team.code, isOpen)}
+              >
+                <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                  {teamItems.map((s, idx) => {
+                    const reserved = outgoing.get(s.code) ?? 0
+                    const allReserved = s.available === 0
+                    const Row = (
+                      <>
+                        <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[11px] font-bold text-neutral-700">
+                          {s.num}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium text-neutral-900">
+                            {labelFor(s.code, s.num, s.name)}
+                          </div>
+                          <div className="text-[11px] tabular-nums text-neutral-500">
+                            {s.available} of {s.count - 1} spare
+                          </div>
                         </div>
-                        <div className="text-[11px] tabular-nums text-neutral-500">
-                          {s.available} of {s.count - 1} spare
-                        </div>
-                      </div>
-                      {allReserved ? (
-                        <ReservationBadge kind="all-reserved" />
-                      ) : reserved > 0 ? (
-                        <ReservationBadge kind="partial-reserved" reserved={reserved} />
-                      ) : null}
-                      <span className="text-xs tabular-nums text-neutral-400">{s.code}</span>
-                    </>
-                  )
-                  return (
-                    <li
-                      key={s.code}
-                      className={cn(
-                        idx !== items.length - 1 && 'border-b border-neutral-100',
-                      )}
-                    >
-                      {allReserved ? (
-                        <div className="flex items-center gap-3 px-3 py-2 opacity-60">
-                          {Row}
-                        </div>
-                      ) : (
-                        <Link
-                          to={`/market/new?want=${s.code}`}
-                          className="flex items-center gap-3 px-3 py-2 active:bg-neutral-50 hover:bg-neutral-50"
-                        >
-                          {Row}
-                        </Link>
-                      )}
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
-          ))
+                        {allReserved ? (
+                          <ReservationBadge kind="all-reserved" />
+                        ) : reserved > 0 ? (
+                          <ReservationBadge
+                            kind="partial-reserved"
+                            reserved={reserved}
+                          />
+                        ) : null}
+                        <span className="text-xs tabular-nums text-neutral-400">
+                          {s.code}
+                        </span>
+                      </>
+                    )
+                    return (
+                      <li
+                        key={s.code}
+                        className={cn(
+                          idx !== teamItems.length - 1 &&
+                            'border-b border-neutral-100',
+                        )}
+                      >
+                        {allReserved ? (
+                          <div className="flex items-center gap-3 px-3 py-2 opacity-60">
+                            {Row}
+                          </div>
+                        ) : (
+                          <Link
+                            to={`/market/new?want=${s.code}`}
+                            className="flex items-center gap-3 px-3 py-2 active:bg-neutral-50 hover:bg-neutral-50"
+                          >
+                            {Row}
+                          </Link>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </CollapsibleTeamGroup>
+            )
+          })
         )}
       </div>
     </section>
