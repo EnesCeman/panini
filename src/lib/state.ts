@@ -10,6 +10,8 @@ import { create } from 'zustand'
 import { useShallow } from 'zustand/shallow'
 import { TEAMS } from '@/data/teams'
 import { db } from './firebase'
+import type { Proposal } from './proposalSchema'
+import { deriveReservations, type ReservationMaps } from './reservations'
 
 export type Sticker = { count: number; name: string | null }
 export type Toast = { id: number; message: string }
@@ -20,6 +22,8 @@ type State = {
   stickers: Map<string, Sticker>
   ready: boolean
   toasts: Toast[]
+  proposals: Map<string, Proposal>
+  proposalsReady: boolean
 }
 
 type Actions = {
@@ -27,6 +31,8 @@ type Actions = {
   patchSticker: (code: string, s: Sticker) => void
   pushToast: (message: string) => void
   dismissToast: (id: number) => void
+  setProposals: (m: Map<string, Proposal>) => void
+  patchProposal: (id: string, p: Proposal | null) => void
 }
 
 let toastId = 1
@@ -35,6 +41,8 @@ export const useStore = create<State & Actions>((set, get) => ({
   stickers: new Map(),
   ready: false,
   toasts: [],
+  proposals: new Map(),
+  proposalsReady: false,
   setStickers: (stickers) => set({ stickers, ready: true }),
   patchSticker: (code, sticker) =>
     set((state) => {
@@ -49,6 +57,14 @@ export const useStore = create<State & Actions>((set, get) => ({
   },
   dismissToast: (id) =>
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
+  setProposals: (proposals) => set({ proposals, proposalsReady: true }),
+  patchProposal: (id, p) =>
+    set((state) => {
+      const next = new Map(state.proposals)
+      if (p === null) next.delete(id)
+      else next.set(id, p)
+      return { proposals: next }
+    }),
 }))
 
 export function subscribeStickers(): () => void {
@@ -65,6 +81,24 @@ export function subscribeStickers(): () => void {
     },
     (err) => {
       console.error('Firestore snapshot error', err)
+      useStore.getState().pushToast('Connection error')
+    },
+  )
+}
+
+export function subscribeProposals(): () => void {
+  return onSnapshot(
+    collection(db, 'proposals'),
+    (snap) => {
+      const map = new Map<string, Proposal>()
+      snap.forEach((d) => {
+        const data = d.data() as Omit<Proposal, 'id'>
+        map.set(d.id, { id: d.id, ...data })
+      })
+      useStore.getState().setProposals(map)
+    },
+    (err) => {
+      console.error('Proposals snapshot error', err)
       useStore.getState().pushToast('Connection error')
     },
   )
@@ -108,6 +142,30 @@ export function useTeamProgress(teamCode: string) {
 
 export function useToasts() {
   return useStore((s) => s.toasts)
+}
+
+export function useProposals(): Map<string, Proposal> {
+  return useStore((s) => s.proposals)
+}
+
+export function useProposal(id: string | undefined): Proposal | undefined {
+  return useStore((s) => (id ? s.proposals.get(id) : undefined))
+}
+
+export function useReservations(): ReservationMaps {
+  return useStore(
+    useShallow((s) => deriveReservations(Array.from(s.proposals.values()))),
+  )
+}
+
+export function usePendingCount(): number {
+  return useStore((s) => {
+    let n = 0
+    for (const p of s.proposals.values()) {
+      if (p.status === 'pending') n += 1
+    }
+    return n
+  })
 }
 
 export async function incrementSticker(code: string) {

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { TabBar } from '@/components/TabBar'
 import { Toaster } from '@/components/Toaster'
-import { subscribeStickers } from '@/lib/state'
+import { subscribeProposals, subscribeStickers } from '@/lib/state'
 import { Doubles } from '@/pages/Doubles'
 import { Home } from '@/pages/Home'
 import { Missing } from '@/pages/Missing'
@@ -11,7 +11,12 @@ import { TeamDetail } from '@/pages/TeamDetail'
 
 export default function App() {
   useEffect(() => {
-    return subscribeStickers()
+    const unsubStickers = subscribeStickers()
+    const unsubProposals = subscribeProposals()
+    return () => {
+      unsubStickers()
+      unsubProposals()
+    }
   }, [])
 
   return (
