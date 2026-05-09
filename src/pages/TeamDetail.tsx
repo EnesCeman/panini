@@ -9,6 +9,23 @@ import { Button } from '@/components/ui/button'
 import { teamByCode } from '@/data/teams'
 import { incrementMany, useTeamProgress } from '@/lib/state'
 
+// Sticker layout that mirrors the printed album spread:
+//   row 1: 1, 2 (top of left page)
+//   row 2: 3, 4, 5, 6
+//   row 3: 7, 8, 9, 10
+//   row 4: 11, 12, 13 (team photo, span 2 cols)
+//   row 5: 14, 15, 16, 17
+//   row 6: 18, 19, 20
+// `null` entries are intentional empty cells in the 4-col grid.
+const ALBUM_LAYOUT: Array<number | null> = [
+  1, 2, null, null,
+  3, 4, 5, 6,
+  7, 8, 9, 10,
+  11, 12, 13,
+  14, 15, 16, 17,
+  18, 19, 20, null,
+]
+
 export function TeamDetail() {
   const { code = '' } = useParams<{ code: string }>()
   const upper = code.toUpperCase()
@@ -111,18 +128,19 @@ export function TeamDetail() {
       )}
 
       <div className="grid grid-cols-4 gap-2 px-3 pt-4">
-        {Array.from({ length: 20 }, (_, i) => {
-          const num = i + 1
-          const stickerCode = `${team.code}-${num}`
+        {ALBUM_LAYOUT.map((slot, idx) => {
+          if (slot === null) return <div key={`spacer-${idx}`} aria-hidden />
+          const stickerCode = `${team.code}-${slot}`
           return (
             <StickerTile
               key={stickerCode}
               code={stickerCode}
-              num={num}
+              num={slot}
               onSelect={setOpenCode}
               selectMode={selectMode}
               selected={selected.has(stickerCode)}
               onToggleSelect={toggleSelect}
+              wide={slot === 13}
             />
           )
         })}

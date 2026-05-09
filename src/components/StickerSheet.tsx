@@ -19,7 +19,7 @@ type Props = {
 
 const KIND_LABEL: Record<ReturnType<typeof stickerKind>, string> = {
   badge: 'Team badge',
-  team_photo: 'Team photo',
+  team_photo: 'Team Photo',
   player: 'Player',
 }
 

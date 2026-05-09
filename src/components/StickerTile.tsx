@@ -11,6 +11,7 @@ type Props = {
   selectMode?: boolean
   selected?: boolean
   onToggleSelect?: (code: string) => void
+  wide?: boolean
 }
 
 export function StickerTile({
@@ -20,6 +21,7 @@ export function StickerTile({
   selectMode = false,
   selected = false,
   onToggleSelect,
+  wide = false,
 }: Props) {
   const sticker = useSticker(code)
   const kind = stickerKind(num)
@@ -30,7 +32,7 @@ export function StickerTile({
     kind === 'badge'
       ? 'BADGE'
       : kind === 'team_photo'
-        ? 'PHOTO'
+        ? 'TEAM PHOTO'
         : sticker.name && sticker.name.length > 0
           ? sticker.name
           : code
@@ -47,7 +49,8 @@ export function StickerTile({
   return (
     <div
       className={cn(
-        'group relative flex aspect-[4/5] flex-col overflow-hidden rounded-lg border text-center transition',
+        'group relative flex flex-col overflow-hidden rounded-lg border text-center transition',
+        wide ? 'col-span-2 aspect-[8/5]' : 'aspect-[4/5]',
         !owned && 'border-neutral-200 bg-neutral-100 text-neutral-400',
         owned && !extras && 'border-emerald-300 bg-emerald-50 text-emerald-900',
         extras && 'border-amber-300 bg-amber-50 text-amber-900',
