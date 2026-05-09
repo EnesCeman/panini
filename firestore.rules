@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(db)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if isAdmin();
+    }
+
+    match /stickers/{code} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /proposals/{id} {
+      allow read: if true;
+
+      allow create: if
+        request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.decidedAt == null
+        && request.resource.data.closedAt == null
+        && request.resource.data.decidedBy == null
+        && request.resource.data.ownerNote == null
+        && request.resource.data.proposer.name is string
+        && request.resource.data.proposer.name.size() > 0
+        && request.resource.data.proposer.contact is string
+        && request.resource.data.proposer.contact.size() > 0
+        && request.resource.data.trades.size() >= 1
+        && request.resource.data.trades.size() <= 20;
+
+      allow update: if
+        resource.data.status == 'pending'
+        && request.resource.data.status == 'withdrawn'
+        && request.resource.data.diff(resource.data)
+             .affectedKeys().hasOnly(['status', 'closedAt']);
+
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
+    }
+  }
+}
