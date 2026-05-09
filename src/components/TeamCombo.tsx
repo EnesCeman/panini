@@ -2,6 +2,7 @@ import { ChevronDown } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Flag } from '@/components/Flag'
 import { GROUPS, TEAMS } from '@/data/teams'
+import { normalizeForSearch } from '@/lib/normalize'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -20,15 +21,15 @@ export function TeamCombo({ value, onChange, placeholder = 'Team…', className 
   const selected = TEAMS.find((t) => t.code === value)
 
   const grouped = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = normalizeForSearch(query)
     return GROUPS.map((g) => ({
       group: g,
       teams: TEAMS.filter(
         (t) =>
           t.group === g &&
           (q.length === 0 ||
-            t.name.toLowerCase().includes(q) ||
-            t.code.toLowerCase().includes(q)),
+            normalizeForSearch(t.name).includes(q) ||
+            normalizeForSearch(t.code).includes(q)),
       ),
     })).filter((g) => g.teams.length > 0)
   }, [query])

@@ -1,4 +1,5 @@
 import { GROUPS, TEAMS } from '@/data/teams'
+import { normalizeForSearch } from '@/lib/normalize'
 import { GroupPill } from './GroupPill'
 import { TeamRow } from './TeamRow'
 
@@ -8,15 +9,15 @@ type Props = {
 }
 
 export function GroupSection({ dense = false, query = '' }: Props) {
-  const q = query.trim().toLowerCase()
+  const q = normalizeForSearch(query)
   const groups = GROUPS.map((group) => ({
     group,
     teams: TEAMS.filter(
       (t) =>
         t.group === group &&
         (q.length === 0 ||
-          t.name.toLowerCase().includes(q) ||
-          t.code.toLowerCase().includes(q)),
+          normalizeForSearch(t.name).includes(q) ||
+          normalizeForSearch(t.code).includes(q)),
     ),
   })).filter((g) => g.teams.length > 0)
 

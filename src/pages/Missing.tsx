@@ -4,6 +4,7 @@ import { GroupPill } from '@/components/GroupPill'
 import { SearchBar } from '@/components/SearchBar'
 import { StickerSheet } from '@/components/StickerSheet'
 import { GROUPS, TEAMS, stickerKind } from '@/data/teams'
+import { normalizeForSearch } from '@/lib/normalize'
 import { resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
@@ -32,7 +33,7 @@ export function Missing() {
   }, [stickers])
 
   const grouped = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = normalizeForSearch(query)
     const map = new Map<string, MissingItem[]>()
     for (const item of allMissing) {
       const team = TEAMS.find((t) => t.code === item.teamCode)
@@ -40,9 +41,9 @@ export function Missing() {
       if (groupFilter.size > 0 && !groupFilter.has(team.group)) continue
       if (q.length > 0) {
         const matches =
-          item.code.toLowerCase().includes(q) ||
-          (item.name?.toLowerCase().includes(q) ?? false) ||
-          team.name.toLowerCase().includes(q)
+          normalizeForSearch(item.code).includes(q) ||
+          (item.name ? normalizeForSearch(item.name).includes(q) : false) ||
+          normalizeForSearch(team.name).includes(q)
         if (!matches) continue
       }
       const list = map.get(item.teamCode) ?? []

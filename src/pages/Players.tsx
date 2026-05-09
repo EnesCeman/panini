@@ -4,6 +4,7 @@ import { SearchBar } from '@/components/SearchBar'
 import { StickerSheet } from '@/components/StickerSheet'
 import { TEAMS, stickerKind, type Team } from '@/data/teams'
 import { ALBUM_PLAYER_NAMES } from '@/data/playerNames'
+import { normalizeForSearch } from '@/lib/normalize'
 import { useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
 
@@ -51,15 +52,15 @@ export function Players() {
   }, [stickers])
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = normalizeForSearch(query)
     const base =
       q.length === 0
         ? allSlots.filter((p) => p.source !== 'none')
         : allSlots.filter(
             (p) =>
-              p.name.toLowerCase().includes(q) ||
-              p.team.name.toLowerCase().includes(q) ||
-              p.code.toLowerCase().includes(q),
+              normalizeForSearch(p.name).includes(q) ||
+              normalizeForSearch(p.team.name).includes(q) ||
+              normalizeForSearch(p.code).includes(q),
           )
     return [...base].sort((a, b) => a.name.localeCompare(b.name))
   }, [allSlots, query])
