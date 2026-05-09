@@ -3,12 +3,15 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { TabBar } from '@/components/TabBar'
 import { Toaster } from '@/components/Toaster'
 import { useIsAdmin } from '@/lib/auth'
+import { PublicLocaleProvider } from '@/lib/publicI18n'
 import { subscribeStickers } from '@/lib/state'
+import { subscribeSubmissions } from '@/lib/submissions'
 import { Cards } from '@/pages/Cards'
 import { Doubles } from '@/pages/Doubles'
 import { Home } from '@/pages/Home'
 import { Inbox } from '@/pages/inbox/Inbox'
 import { Missing } from '@/pages/Missing'
+import { PublicLanding } from '@/pages/PublicLanding'
 import { TeamDetail } from '@/pages/TeamDetail'
 
 function getPath(): string {
@@ -23,13 +26,18 @@ export default function App() {
   const adminCheck = useIsAdmin()
   const path = getPath()
   const onInbox = isInboxPath(path)
+  const isAdmin = adminCheck.status === 'admin'
 
   useEffect(() => {
     const unsub = subscribeStickers()
-    return () => {
-      unsub()
-    }
+    return () => unsub()
   }, [])
+
+  useEffect(() => {
+    if (!isAdmin) return
+    const unsub = subscribeSubmissions()
+    return () => unsub()
+  }, [isAdmin])
 
   if (adminCheck.status === 'loading') {
     return (
@@ -39,18 +47,12 @@ export default function App() {
     )
   }
 
-  if (adminCheck.status !== 'admin' && !onInbox) {
+  if (!isAdmin && !onInbox) {
     return (
-      <div className="mx-auto flex min-h-dvh max-w-md items-center justify-center bg-neutral-50 px-6 text-center">
-        <div className="space-y-2">
-          <h1 className="text-lg font-semibold text-neutral-900">
-            Sticker swap is being rebuilt
-          </h1>
-          <p className="text-sm text-neutral-600">
-            Check back soon — a simpler version is on the way.
-          </p>
-        </div>
-      </div>
+      <PublicLocaleProvider>
+        <Toaster />
+        <PublicLanding />
+      </PublicLocaleProvider>
     )
   }
 

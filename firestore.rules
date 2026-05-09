@@ -15,5 +15,27 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    match /submissions/{id} {
+      allow create: if
+        request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.contact is string
+        && request.resource.data.contact.size() > 0
+        && request.resource.data.contact.size() <= 200
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 500
+        && request.resource.data.theyHave is list
+        && request.resource.data.theyWant is list
+        && request.resource.data.theyHave.size() + request.resource.data.theyWant.size() >= 1
+        && request.resource.data.theyHave.size() <= 960
+        && request.resource.data.theyWant.size() <= 960
+        && request.resource.data.handled == false
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.locale in ['bs', 'en'];
+
+      allow read, update, delete: if isAdmin();
+    }
   }
 }
