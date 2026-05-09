@@ -102,26 +102,36 @@ export function NewProposal() {
 
       <section className="rounded-xl border border-neutral-200 bg-white p-4">
         <h3 className="mb-3 text-sm font-semibold text-neutral-900">Your details</h3>
+        <p className="mb-3 text-[11px] text-neutral-500">
+          <span className="text-rose-600">*</span> required
+        </p>
         <div className="flex flex-col gap-3">
           <label className="block">
             <span className="mb-1 block text-[11px] font-medium text-neutral-600">
-              Your name
+              Your name <span className="text-rose-600">*</span>
             </span>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              aria-required="true"
+            />
           </label>
           <label className="block">
             <span className="mb-1 block text-[11px] font-medium text-neutral-600">
-              Contact (email, phone, IG handle…)
+              Contact (email, phone, IG handle…) <span className="text-rose-600">*</span>
             </span>
             <Input
               value={contact}
               onChange={(e) => setContact(e.target.value)}
               placeholder="me@example.com"
+              required
+              aria-required="true"
             />
           </label>
           <label className="block">
             <span className="mb-1 block text-[11px] font-medium text-neutral-600">
-              Note (optional)
+              Note <span className="text-neutral-400">(optional)</span>
             </span>
             <Input
               value={note}

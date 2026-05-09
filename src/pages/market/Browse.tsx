@@ -50,11 +50,58 @@ function Intro() {
   return (
     <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
       <p className="font-semibold">Hey! Looking to swap World Cup stickers?</p>
-      <p className="mt-1 text-xs text-neutral-500">
-        Below are the ones I still need and the ones I have spare. Tap any
-        sticker to start a proposal with it pre-selected, or hit the floating
-        button to build something custom. Whether to accept is up to me — your
-        proposal lands in my inbox and I'll review it.
+      <p className="mt-2 text-xs text-neutral-600">
+        Below: <strong>cards I'm missing</strong> (left) and{' '}
+        <strong>cards I have spare</strong> (right). Tap any to start.
+      </p>
+
+      <p className="mt-3 text-xs font-semibold text-neutral-800">How to build a trade</p>
+      <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-neutral-600">
+        <li>
+          <strong>Start with what you'd offer:</strong> tap a card from{' '}
+          <em>Cards I'm missing</em>, then multi-select which of{' '}
+          <em>my spares</em> you want in return.
+        </li>
+        <li>
+          <strong>Or start with what you want:</strong> tap a card from{' '}
+          <em>Cards I have spare</em>, then multi-select which of{' '}
+          <em>my missing</em> you'd send my way.
+        </li>
+      </ul>
+
+      <p className="mt-3 text-xs font-semibold text-neutral-800">
+        Per-trade ratio (one side must equal 1)
+      </p>
+      <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-neutral-600">
+        <li>
+          <strong>1 of yours → up to 5 of mine</strong> (offer one card I need
+          for up to five of my spares).
+        </li>
+        <li>
+          <strong>Many of yours → exactly 1 of mine</strong> (sweeten the deal:
+          send several cards I need for one specific spare of mine).
+        </li>
+      </ul>
+
+      <p className="mt-3 text-xs font-semibold text-neutral-800">Other things to know</p>
+      <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-neutral-600">
+        <li>
+          You can <strong>bundle multiple trades</strong> into a single proposal
+          — add as many trades as you want before submitting.
+        </li>
+        <li>
+          Everything is <strong>editable before you submit</strong>: remove
+          cards, change quantities, or scrap a trade and start over.
+        </li>
+        <li>
+          After submitting you can't edit, but you'll get a tracking link and
+          can withdraw if you change your mind.
+        </li>
+      </ul>
+
+      <p className="mt-3 text-xs text-neutral-500">
+        Whether to accept is up to me — your proposal lands in my inbox and I'll
+        review it.
       </p>
     </div>
   )
