@@ -8,12 +8,39 @@ import { cn } from '@/lib/utils'
 
 const TEAM_CODES = new Set(TEAMS.map((t) => t.code))
 
+type Mode = 'find-missing' | 'find-duplicates'
+
 type Match = {
   code: string
   teamCode: string
   num: number
   name: string
-  status: 'missing' | 'have'
+  count: number
+}
+
+type ModeCopy = {
+  toggle: string
+  hint: string
+  emptyHint: string
+  listHeader: string
+  alreadyLabel: string
+}
+
+const COPY: Record<Mode, ModeCopy> = {
+  'find-missing': {
+    toggle: 'What I need',
+    hint: "Paste the list someone sent you of cards they have spare. I'll show you which of those you're missing.",
+    emptyHint: 'Paste codes above — I\'ll filter to the ones you\'re missing.',
+    listHeader: 'Missing (you might want to ask for these)',
+    alreadyLabel: 'you already have',
+  },
+  'find-duplicates': {
+    toggle: 'What I can give',
+    hint: "Paste a list of cards someone is missing. I'll show which of those you have as duplicates and could give.",
+    emptyHint: 'Paste codes above — I\'ll filter to the ones you have as duplicates.',
+    listHeader: 'Duplicates you have (you could offer these)',
+    alreadyLabel: "you don't have / have only one",
+  },
 }
 
 // Parse a free-form list. Handles 'IRN-2', 'IRN 2', 'IRN2', and the
@@ -69,6 +96,7 @@ type Props = {
 
 export function CodeChecker({ onClose }: Props) {
   const stickers = useStickersMap()
+  const [mode, setMode] = useState<Mode>('find-missing')
   const [input, setInput] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [copied, setCopied] = useState(false)
@@ -84,26 +112,30 @@ export function CodeChecker({ onClose }: Props) {
       const albumName = albumPlayerName(code)
       const name =
         userName ?? albumName ?? resolvePlayerLabel(code, null) ?? code
-      const status: Match['status'] =
-        (sticker?.count ?? 0) === 0 ? 'missing' : 'have'
-      return { code, teamCode, num, name, status }
+      return {
+        code,
+        teamCode,
+        num,
+        name,
+        count: sticker?.count ?? 0,
+      }
     })
   }, [parsed, stickers])
 
-  const missing = matches.filter((m) => m.status === 'missing')
-  const haveCount = matches.length - missing.length
+  const actionable = useMemo<Match[]>(() => {
+    if (mode === 'find-missing') return matches.filter((m) => m.count === 0)
+    return matches.filter((m) => m.count >= 2)
+  }, [matches, mode])
 
-  // Auto-select all missing whenever the parsed list changes; user can
-  // then toggle off the ones they don't actually want to request.
+  const otherCount = matches.length - actionable.length
+
+  // Auto-select the actionable list whenever inputs OR mode change. User
+  // can toggle off any they don't want before copying.
   const parsedKey = parsed.valid.join(',')
   useEffect(() => {
-    setSelected(
-      new Set(
-        matches.filter((m) => m.status === 'missing').map((m) => m.code),
-      ),
-    )
+    setSelected(new Set(actionable.map((m) => m.code)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parsedKey])
+  }, [parsedKey, mode])
 
   function toggle(code: string) {
     setSelected((prev) => {
@@ -115,7 +147,7 @@ export function CodeChecker({ onClose }: Props) {
   }
 
   function selectAll() {
-    setSelected(new Set(missing.map((m) => m.code)))
+    setSelected(new Set(actionable.map((m) => m.code)))
   }
   function clearAll() {
     setSelected(new Set())
@@ -154,22 +186,36 @@ export function CodeChecker({ onClose }: Props) {
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-3">
-        <p className="mb-2 text-xs text-neutral-600">
-          Paste codes someone sent you (any format: <code>POR-5</code>,{' '}
-          <code>POR 5</code>, or compact <code>POR 5,8,12</code>). I'll filter
-          to the ones you're missing.
-        </p>
+        <div className="mb-3 inline-flex overflow-hidden rounded-md border border-neutral-200 text-xs font-medium">
+          {(['find-missing', 'find-duplicates'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={cn(
+                'px-3 py-1.5',
+                mode === m
+                  ? 'bg-neutral-900 text-white'
+                  : 'bg-white text-neutral-600 hover:bg-neutral-100',
+              )}
+            >
+              {COPY[m].toggle}
+            </button>
+          ))}
+        </div>
+
+        <p className="mb-2 text-xs text-neutral-600">{COPY[mode].hint}</p>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="e.g. IRN 2,18,20  POR 5,8  GER 12"
-          className="block w-full rounded-md border border-neutral-200 p-3 text-sm"
+          placeholder="POR-5, POR-8, GER-12, IRN-2 …"
+          className="block w-full rounded-md border border-neutral-200 p-3 font-mono text-sm"
           rows={4}
         />
 
         {parsed.valid.length === 0 && parsed.invalid.length === 0 && (
           <p className="mt-3 text-[11px] text-neutral-500">
-            Paste a list above — codes will appear below.
+            {COPY[mode].emptyHint}
           </p>
         )}
 
@@ -177,23 +223,27 @@ export function CodeChecker({ onClose }: Props) {
           <div className="mt-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[11px] text-neutral-600">
             Found <strong>{parsed.valid.length}</strong> valid:{' '}
             <strong className="text-emerald-700">
-              {missing.length} missing
+              {actionable.length}{' '}
+              {mode === 'find-missing' ? 'missing' : 'duplicates'}
             </strong>
-            , {haveCount} you already have
+            , {otherCount} {COPY[mode].alreadyLabel}
             {parsed.invalid.length > 0 && (
               <>
-                , <span className="text-rose-700">{parsed.invalid.length} invalid</span>
+                ,{' '}
+                <span className="text-rose-700">
+                  {parsed.invalid.length} invalid
+                </span>
               </>
             )}
             .
           </div>
         )}
 
-        {missing.length > 0 && (
+        {actionable.length > 0 && (
           <>
             <div className="mb-2 mt-4 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-neutral-900">
-                Missing ({selected.size}/{missing.length} selected)
+                {COPY[mode].listHeader} ({selected.size}/{actionable.length})
               </h3>
               <div className="flex gap-3 text-xs">
                 <button
@@ -213,14 +263,15 @@ export function CodeChecker({ onClose }: Props) {
               </div>
             </div>
             <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
-              {missing.map((m, idx) => {
+              {actionable.map((m, idx) => {
                 const team = teamByCode(m.teamCode)
                 const isSelected = selected.has(m.code)
                 return (
                   <li
                     key={m.code}
                     className={cn(
-                      idx !== missing.length - 1 && 'border-b border-neutral-100',
+                      idx !== actionable.length - 1 &&
+                        'border-b border-neutral-100',
                     )}
                   >
                     <label className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm active:bg-neutral-50">
@@ -236,6 +287,8 @@ export function CodeChecker({ onClose }: Props) {
                         </div>
                         <div className="text-[11px] text-neutral-500">
                           {team ? team.name : m.teamCode}
+                          {mode === 'find-duplicates' &&
+                            ` · ${m.count - 1} spare`}
                         </div>
                       </div>
                       <span className="text-xs tabular-nums text-neutral-400">
