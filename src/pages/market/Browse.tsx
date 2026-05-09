@@ -1,4 +1,3 @@
-import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Flag } from '@/components/Flag'
@@ -34,12 +33,14 @@ function labelFor(code: string, num: number, name: string | null): string {
 
 export function Browse() {
   return (
-    <div className="flex flex-col gap-6 px-4 pt-3">
+    <div className="flex flex-col gap-6 px-4 pt-3 md:px-6">
       <Intro />
-      <MissingSection />
-      <DoublesSection />
+      <div className="flex flex-col gap-6 md:grid md:grid-cols-2 md:items-start md:gap-6">
+        <MissingSection />
+        <DoublesSection />
+      </div>
       <Link to="/market/new" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
-        <Button className="rounded-full shadow-lg">Send a swap proposal</Button>
+        <Button className="rounded-full shadow-lg">Build a custom proposal</Button>
       </Link>
     </div>
   )
@@ -48,10 +49,12 @@ export function Browse() {
 function Intro() {
   return (
     <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
-      <p className="font-semibold">Looking to swap?</p>
+      <p className="font-semibold">Hey! Looking to swap World Cup stickers?</p>
       <p className="mt-1 text-xs text-neutral-500">
-        Browse what I'm missing and what I have spare. Build a proposal —
-        accept/reject is up to me.
+        Below are the ones I still need and the ones I have spare. Tap any
+        sticker to start a proposal with it pre-selected, or hit the floating
+        button to build something custom. Whether to accept is up to me — your
+        proposal lands in my inbox and I'll review it.
       </p>
     </div>
   )
@@ -139,9 +142,16 @@ function MissingSection() {
 
   return (
     <section>
-      <header className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-neutral-900">What I need ({items.length})</h2>
-        <ModeToggle mode={mode} onChange={setMode} />
+      <header className="mb-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-neutral-900">
+            Cards I'm missing ({items.length})
+          </h2>
+          <ModeToggle mode={mode} onChange={setMode} />
+        </div>
+        <p className="mt-1 text-[11px] text-neutral-500">
+          You might have one of these? Search or scroll, then tap to start a swap.
+        </p>
       </header>
       <SearchBar
         value={query}
@@ -156,36 +166,36 @@ function MissingSection() {
         ) : (
           grouped.map(({ team, items }) => (
             <section key={team.code}>
-              <Link
-                to={`/team/${team.code}`}
-                className="mb-1 -mx-1 flex items-center gap-2 rounded px-1 py-0.5"
-              >
+              <div className="mb-1 flex items-center gap-2 px-1 py-0.5">
                 <Flag code={team.code} className="h-4 w-6 shrink-0" />
                 <span className="truncate text-sm font-semibold text-neutral-900">
                   {team.name}
                 </span>
-                <ChevronRight className="h-4 w-4 text-neutral-400" />
                 <GroupPill group={team.group} />
-              </Link>
+              </div>
               <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                 {items.map((s, idx) => (
                   <li
                     key={s.code}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2 text-left',
                       idx !== items.length - 1 && 'border-b border-neutral-100',
                     )}
                   >
-                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[11px] font-bold text-neutral-700">
-                      {s.num}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm text-neutral-900">
-                      {labelFor(s.code, s.num, s.name)}
-                    </span>
-                    {(incoming.get(s.code) ?? 0) > 0 && (
-                      <ReservationBadge kind="incoming" reserved={incoming.get(s.code)} />
-                    )}
-                    <span className="text-xs tabular-nums text-neutral-400">{s.code}</span>
+                    <Link
+                      to={`/market/new?offer=${s.code}`}
+                      className="flex items-center gap-3 px-3 py-2 text-left active:bg-neutral-50 hover:bg-neutral-50"
+                    >
+                      <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[11px] font-bold text-neutral-700">
+                        {s.num}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-sm text-neutral-900">
+                        {labelFor(s.code, s.num, s.name)}
+                      </span>
+                      {(incoming.get(s.code) ?? 0) > 0 && (
+                        <ReservationBadge kind="incoming" reserved={incoming.get(s.code)} />
+                      )}
+                      <span className="text-xs tabular-nums text-neutral-400">{s.code}</span>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -245,11 +255,16 @@ function DoublesSection() {
 
   return (
     <section>
-      <header className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-neutral-900">
-          What I'm giving ({totalSpare} spare)
-        </h2>
-        <ModeToggle mode={mode} onChange={setMode} />
+      <header className="mb-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-neutral-900">
+            Cards I have spare ({totalSpare})
+          </h2>
+          <ModeToggle mode={mode} onChange={setMode} />
+        </div>
+        <p className="mt-1 text-[11px] text-neutral-500">
+          Anything you want? Tap to include it in your proposal.
+        </p>
       </header>
       <SearchBar
         value={query}
@@ -264,29 +279,22 @@ function DoublesSection() {
         ) : (
           grouped.map(({ team, items }) => (
             <section key={team.code}>
-              <Link
-                to={`/team/${team.code}`}
-                className="mb-1 -mx-1 flex items-center gap-2 rounded px-1 py-0.5"
-              >
+              <div className="mb-1 flex items-center gap-2 px-1 py-0.5">
                 <Flag code={team.code} className="h-4 w-6 shrink-0" />
                 <span className="truncate text-sm font-semibold text-neutral-900">
                   {team.name}
                 </span>
-                <ChevronRight className="h-4 w-4 text-neutral-400" />
                 <GroupPill group={team.group} />
-              </Link>
+              </div>
               <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                 {items.map((s, idx) => {
                   const reserved = outgoing.get(s.code) ?? 0
-                  return (
-                    <li
-                      key={s.code}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-2',
-                        idx !== items.length - 1 && 'border-b border-neutral-100',
-                      )}
-                    >
-                      <Flag code={team.code} className="h-4 w-6" />
+                  const allReserved = s.available === 0
+                  const Row = (
+                    <>
+                      <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[11px] font-bold text-neutral-700">
+                        {s.num}
+                      </span>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium text-neutral-900">
                           {labelFor(s.code, s.num, s.name)}
@@ -295,11 +303,32 @@ function DoublesSection() {
                           {s.code} · {s.available} of {s.count - 1} spare
                         </div>
                       </div>
-                      {s.available === 0 ? (
+                      {allReserved ? (
                         <ReservationBadge kind="all-reserved" />
                       ) : reserved > 0 ? (
                         <ReservationBadge kind="partial-reserved" reserved={reserved} />
                       ) : null}
+                    </>
+                  )
+                  return (
+                    <li
+                      key={s.code}
+                      className={cn(
+                        idx !== items.length - 1 && 'border-b border-neutral-100',
+                      )}
+                    >
+                      {allReserved ? (
+                        <div className="flex items-center gap-3 px-3 py-2 opacity-60">
+                          {Row}
+                        </div>
+                      ) : (
+                        <Link
+                          to={`/market/new?want=${s.code}`}
+                          className="flex items-center gap-3 px-3 py-2 active:bg-neutral-50 hover:bg-neutral-50"
+                        >
+                          {Row}
+                        </Link>
+                      )}
                     </li>
                   )
                 })}

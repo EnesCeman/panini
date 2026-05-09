@@ -1,5 +1,6 @@
+import { ChevronLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Flag } from '@/components/Flag'
 import { Button } from '@/components/ui/button'
 import { teamByCode } from '@/data/teams'
@@ -85,7 +86,14 @@ function ProposalView({
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 pt-3">
+    <div className="flex flex-col gap-4 px-4 pt-3 md:px-6">
+      <Link
+        to="/market"
+        className="inline-flex items-center gap-1 self-start text-xs text-neutral-600 hover:text-neutral-900"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back to browse
+      </Link>
       {justSubmitted && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
           <p className="font-semibold">Submitted!</p>
@@ -116,7 +124,7 @@ function ProposalView({
                 Trade {idx + 1}
               </div>
               <div className="mt-2">
-                <div className="text-[11px] uppercase text-neutral-500">They give</div>
+                <div className="text-[11px] uppercase text-neutral-500">I offer</div>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {t.offered.map((code) => (
                     <CodeChip key={code} code={code} />
@@ -124,7 +132,7 @@ function ProposalView({
                 </div>
               </div>
               <div className="mt-2">
-                <div className="text-[11px] uppercase text-neutral-500">They want</div>
+                <div className="text-[11px] uppercase text-neutral-500">I want</div>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {t.requested.map((r) => (
                     <CodeChip key={r.code} code={r.code} qty={r.qty} />

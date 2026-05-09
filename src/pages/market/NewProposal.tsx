@@ -1,6 +1,6 @@
-import { Plus } from 'lucide-react'
+import { ChevronLeft, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { TradeRow } from '@/components/market/TradeRow'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,14 @@ const EMPTY_TRADE: Trade = { offered: [], requested: [] }
 
 export function NewProposal() {
   const navigate = useNavigate()
-  const [trades, setTrades] = useState<Trade[]>([{ ...EMPTY_TRADE }])
+  const [params] = useSearchParams()
+  const offerParam = params.get('offer')
+  const wantParam = params.get('want')
+  const [trades, setTrades] = useState<Trade[]>(() => {
+    if (offerParam) return [{ offered: [offerParam], requested: [] }]
+    if (wantParam) return [{ offered: [], requested: [{ code: wantParam, qty: 1 }] }]
+    return [{ ...EMPTY_TRADE }]
+  })
   const [name, setName] = useState('')
   const [contact, setContact] = useState('')
   const [note, setNote] = useState('')
@@ -45,11 +52,18 @@ export function NewProposal() {
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 pt-3">
+    <div className="flex flex-col gap-4 px-4 pt-3 md:px-6">
+      <Link
+        to="/market"
+        className="inline-flex items-center gap-1 self-start text-xs text-neutral-600 hover:text-neutral-900"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back to browse
+      </Link>
       <div>
         <h1 className="text-base font-semibold text-neutral-900">New proposal</h1>
         <p className="mt-1 text-xs text-neutral-500">
-          Each trade: 1 offered for up to 5 wanted, OR many offered for exactly 1 wanted.
+          Each trade: 1 you offer for up to 5 you want, OR many you offer for exactly 1 you want.
         </p>
       </div>
 

@@ -67,7 +67,7 @@ export function TradeRow({
 
       <section className="mb-3">
         <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-          They give (1+ from missing)
+          I offer (cards you're missing)
         </h4>
         <div className="flex flex-wrap gap-2">
           {trade.offered.map((code) => {
@@ -114,14 +114,14 @@ export function TradeRow({
         </div>
         {trade.offered.length > 1 && (
           <p className="mt-2 text-[11px] text-neutral-500">
-            Multiple offered → exactly 1 requested.
+            Multiple offered → I want exactly 1 of yours.
           </p>
         )}
       </section>
 
       <section>
         <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-          They want ({totalRequested} / {trade.offered.length === 1 ? 5 : 1})
+          I want ({totalRequested} / {trade.offered.length === 1 ? 5 : 1} of your spares)
         </h4>
         <div className="flex flex-col gap-2">
           {trade.requested.map((r, ri) => {

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { TabBar } from '@/components/TabBar'
 import { Toaster } from '@/components/Toaster'
+import { useIsAdmin } from '@/lib/auth'
 import { subscribeProposals, subscribeStickers } from '@/lib/state'
 import { Doubles } from '@/pages/Doubles'
 import { Home } from '@/pages/Home'
@@ -11,6 +12,8 @@ import { Players } from '@/pages/Players'
 import { TeamDetail } from '@/pages/TeamDetail'
 
 export default function App() {
+  const adminCheck = useIsAdmin()
+
   useEffect(() => {
     const unsubStickers = subscribeStickers()
     const unsubProposals = subscribeProposals()
@@ -19,6 +22,31 @@ export default function App() {
       unsubProposals()
     }
   }, [])
+
+  useEffect(() => {
+    if (
+      adminCheck.status === 'not-signed-in' ||
+      adminCheck.status === 'not-admin'
+    ) {
+      window.location.replace('/market')
+    }
+  }, [adminCheck])
+
+  if (adminCheck.status === 'loading') {
+    return (
+      <div className="flex min-h-dvh items-center justify-center text-sm text-neutral-500">
+        Loading…
+      </div>
+    )
+  }
+
+  if (adminCheck.status !== 'admin') {
+    return (
+      <div className="flex min-h-dvh items-center justify-center text-sm text-neutral-500">
+        Redirecting to marketplace…
+      </div>
+    )
+  }
 
   return (
     <BrowserRouter>

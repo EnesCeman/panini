@@ -1,12 +1,12 @@
-import { LogIn, Minus, Plus } from 'lucide-react'
+import { Minus, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Flag } from '@/components/Flag'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { stickerKind, teamByCode } from '@/data/teams'
-import { signInWithGoogle, useIsAdmin } from '@/lib/auth'
-import { albumPlayerName } from '@/lib/playerName'
+import { useIsAdmin } from '@/lib/auth'
+import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import {
   decrementSticker,
   incrementSticker,
@@ -69,74 +69,83 @@ export function StickerSheet({ code, onClose }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-xl bg-neutral-100 p-3">
-          <Button
-            type="button"
-            size="icon"
-            variant="outline"
-            aria-label="Decrement"
-            disabled={!canEdit || sticker.count === 0}
-            onClick={() => void decrementSticker(code)}
-            className="h-12 w-12 rounded-full"
-          >
-            <Minus className="h-5 w-5" />
-          </Button>
-          <div className="text-center">
+        {canEdit ? (
+          <>
+            <div className="flex items-center justify-between rounded-xl bg-neutral-100 p-3">
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                aria-label="Decrement"
+                disabled={sticker.count === 0}
+                onClick={() => void decrementSticker(code)}
+                className="h-12 w-12 rounded-full"
+              >
+                <Minus className="h-5 w-5" />
+              </Button>
+              <div className="text-center">
+                <div className="text-3xl font-bold tabular-nums text-neutral-900">
+                  {sticker.count}
+                </div>
+                <div className="text-[11px] uppercase tracking-wide text-neutral-500">
+                  {sticker.count === 0
+                    ? 'Missing'
+                    : sticker.count === 1
+                      ? 'Have'
+                      : `Have +${sticker.count - 1} extra`}
+                </div>
+              </div>
+              <Button
+                type="button"
+                size="icon"
+                aria-label="Increment"
+                onClick={() => void incrementSticker(code)}
+                className="h-12 w-12 rounded-full"
+              >
+                <Plus className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {allowName && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">
+                  Player name
+                </label>
+                <Input
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  onBlur={commitName}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.currentTarget.blur()
+                    }
+                  }}
+                  placeholder={albumPlayerName(code) ?? 'Add a name'}
+                  autoComplete="off"
+                />
+                {albumPlayerName(code) && !draftName && (
+                  <p className="mt-1 text-[11px] text-neutral-500">
+                    Using album default. Type to override.
+                  </p>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="rounded-xl bg-neutral-100 p-4 text-center">
             <div className="text-3xl font-bold tabular-nums text-neutral-900">
               {sticker.count}
             </div>
-            <div className="text-[11px] uppercase tracking-wide text-neutral-500">
+            <div className="mt-1 text-[11px] uppercase tracking-wide text-neutral-500">
               {sticker.count === 0
                 ? 'Missing'
                 : sticker.count === 1
                   ? 'Have'
                   : `Have +${sticker.count - 1} extra`}
             </div>
-          </div>
-          <Button
-            type="button"
-            size="icon"
-            aria-label="Increment"
-            disabled={!canEdit}
-            onClick={() => void incrementSticker(code)}
-            className="h-12 w-12 rounded-full"
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {!canEdit && (
-          <button
-            type="button"
-            onClick={() => void signInWithGoogle()}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700"
-          >
-            <LogIn className="h-3.5 w-3.5" />
-            Sign in to edit
-          </button>
-        )}
-
-        {allowName && (
-          <div>
-            <label className="mb-1 block text-xs font-medium text-neutral-600">
-              Player name
-            </label>
-            <Input
-              value={draftName}
-              onChange={(e) => setDraftName(e.target.value)}
-              onBlur={commitName}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.currentTarget.blur()
-                }
-              }}
-              placeholder={albumPlayerName(code) ?? 'Add a name'}
-              autoComplete="off"
-              disabled={!canEdit}
-            />
-            {albumPlayerName(code) && !draftName && (
-              <p className="mt-1 text-[11px] text-neutral-500">
-                Using album default. Type to override.
+            {allowName && (
+              <p className="mt-3 text-sm text-neutral-700">
+                {resolvePlayerLabel(code, sticker.name)}
               </p>
             )}
           </div>
