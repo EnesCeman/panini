@@ -80,16 +80,11 @@ export function StickerTile({
             <Check className="h-3 w-3" />
           </span>
         ) : (
-          <>
-            {owned && !extras && (
-              <Check className="absolute right-1 top-1 h-4 w-4 text-emerald-600" />
-            )}
-            {extras && (
-              <span className="absolute right-1 top-1 inline-flex h-5 items-center justify-center rounded-full bg-amber-600 px-1.5 text-[10px] font-bold text-white">
-                x{sticker.count}
-              </span>
-            )}
-          </>
+          extras && (
+            <span className="absolute right-1 top-1 inline-flex h-5 items-center justify-center rounded-full bg-amber-600 px-1.5 text-[10px] font-bold text-white">
+              x{sticker.count}
+            </span>
+          )
         )}
         <span
           className={cn(
