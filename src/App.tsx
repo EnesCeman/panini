@@ -8,7 +8,6 @@ import { Home } from '@/pages/Home'
 import { Missing } from '@/pages/Missing'
 import { Players } from '@/pages/Players'
 import { TeamDetail } from '@/pages/TeamDetail'
-import { Teams } from '@/pages/Teams'
 
 export default function App() {
   useEffect(() => {
@@ -21,7 +20,6 @@ export default function App() {
         <Toaster />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/teams" element={<Teams />} />
           <Route path="/team/:code" element={<TeamDetail />} />
           <Route path="/missing" element={<Missing />} />
           <Route path="/doubles" element={<Doubles />} />

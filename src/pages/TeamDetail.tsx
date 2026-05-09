@@ -37,7 +37,7 @@ export function TeamDetail() {
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
-  if (!team) return <Navigate to="/teams" replace />
+  if (!team) return <Navigate to="/" replace />
 
   const enterSelect = () => {
     setSelected(new Set())
@@ -102,7 +102,7 @@ export function TeamDetail() {
           style={headerStyle}
         >
           <Link
-            to="/teams"
+            to="/"
             aria-label="Back"
             className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 active:bg-neutral-200"
           >

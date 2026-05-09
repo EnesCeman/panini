@@ -2,15 +2,13 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Flag } from '@/components/Flag'
 import { GroupPill } from '@/components/GroupPill'
-import { QuickAdd } from '@/components/QuickAdd'
 import { SearchBar } from '@/components/SearchBar'
 import { StickerSheet } from '@/components/StickerSheet'
-import { GROUPS, TEAMS, stickerKind } from '@/data/teams'
+import { TEAMS, stickerKind } from '@/data/teams'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
-import { groupColor } from '@/lib/groupColors'
 
 type DoubleItem = {
   code: string
@@ -23,7 +21,6 @@ type DoubleItem = {
 export function Doubles() {
   const stickers = useStickersMap()
   const [query, setQuery] = useState('')
-  const [groupFilter, setGroupFilter] = useState<Set<string>>(new Set())
   const [openCode, setOpenCode] = useState<string | null>(null)
 
   const allDoubles = useMemo<DoubleItem[]>(() => {
@@ -57,7 +54,6 @@ export function Doubles() {
     for (const item of allDoubles) {
       const team = TEAMS.find((t) => t.code === item.teamCode)
       if (!team) continue
-      if (groupFilter.size > 0 && !groupFilter.has(team.group)) continue
       if (q.length > 0) {
         const album = albumPlayerName(item.code)
         const matches =
@@ -74,16 +70,7 @@ export function Doubles() {
     return TEAMS.map((t) => ({ team: t, items: map.get(t.code) ?? [] }))
       .filter((g) => g.items.length > 0)
       .sort((a, b) => a.team.name.localeCompare(b.team.name))
-  }, [allDoubles, query, groupFilter])
-
-  const toggleGroup = (g: string) => {
-    setGroupFilter((prev) => {
-      const next = new Set(prev)
-      if (next.has(g)) next.delete(g)
-      else next.add(g)
-      return next
-    })
-  }
+  }, [allDoubles, query])
 
   return (
     <div className="pb-24">
@@ -92,27 +79,7 @@ export function Doubles() {
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >
         <h1 className="text-lg font-semibold text-neutral-900">{totalExtras} extras to give</h1>
-        <QuickAdd />
         <SearchBar value={query} onChange={setQuery} placeholder="Search by code, name, or team" />
-        <div className="flex flex-wrap gap-1.5">
-          {GROUPS.map((g) => {
-            const active = groupFilter.has(g)
-            const c = groupColor(g)
-            return (
-              <button
-                key={g}
-                type="button"
-                onClick={() => toggleGroup(g)}
-                className={cn(
-                  'h-7 min-w-7 rounded-full px-2 text-xs font-bold transition',
-                  active ? `${c.bg} text-white` : 'bg-neutral-200 text-neutral-700',
-                )}
-              >
-                {g}
-              </button>
-            )
-          })}
-        </div>
       </header>
 
       {allDoubles.length === 0 ? (

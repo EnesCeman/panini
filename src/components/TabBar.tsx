@@ -1,10 +1,9 @@
-import { CircleDashed, Grid3x3, Home, Layers, Users } from 'lucide-react'
+import { CircleDashed, Home, Layers, Users } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 const TABS = [
   { to: '/', label: 'Home', icon: Home },
-  { to: '/teams', label: 'Teams', icon: Grid3x3 },
   { to: '/players', label: 'Players', icon: Users },
   { to: '/missing', label: 'Missing', icon: CircleDashed },
   { to: '/doubles', label: 'Doubles', icon: Layers },

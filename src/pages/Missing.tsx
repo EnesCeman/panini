@@ -4,19 +4,17 @@ import { Flag } from '@/components/Flag'
 import { GroupPill } from '@/components/GroupPill'
 import { SearchBar } from '@/components/SearchBar'
 import { StickerSheet } from '@/components/StickerSheet'
-import { GROUPS, TEAMS, stickerKind } from '@/data/teams'
+import { TEAMS, stickerKind } from '@/data/teams'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
-import { groupColor } from '@/lib/groupColors'
 
 type MissingItem = { code: string; teamCode: string; num: number; name: string | null }
 
 export function Missing() {
   const stickers = useStickersMap()
   const [query, setQuery] = useState('')
-  const [groupFilter, setGroupFilter] = useState<Set<string>>(new Set())
   const [openCode, setOpenCode] = useState<string | null>(null)
 
   const allMissing = useMemo<MissingItem[]>(() => {
@@ -39,7 +37,6 @@ export function Missing() {
     for (const item of allMissing) {
       const team = TEAMS.find((t) => t.code === item.teamCode)
       if (!team) continue
-      if (groupFilter.size > 0 && !groupFilter.has(team.group)) continue
       if (q.length > 0) {
         const album = albumPlayerName(item.code)
         const matches =
@@ -56,16 +53,7 @@ export function Missing() {
     return TEAMS.map((t) => ({ team: t, items: map.get(t.code) ?? [] }))
       .filter((g) => g.items.length > 0)
       .sort((a, b) => a.team.name.localeCompare(b.team.name))
-  }, [allMissing, query, groupFilter])
-
-  const toggleGroup = (g: string) => {
-    setGroupFilter((prev) => {
-      const next = new Set(prev)
-      if (next.has(g)) next.delete(g)
-      else next.add(g)
-      return next
-    })
-  }
+  }, [allMissing, query])
 
   return (
     <div className="pb-24">
@@ -79,25 +67,6 @@ export function Missing() {
           onChange={setQuery}
           placeholder="Search by code, name, or team"
         />
-        <div className="flex flex-wrap gap-1.5">
-          {GROUPS.map((g) => {
-            const active = groupFilter.has(g)
-            const c = groupColor(g)
-            return (
-              <button
-                key={g}
-                type="button"
-                onClick={() => toggleGroup(g)}
-                className={cn(
-                  'h-7 min-w-7 rounded-full px-2 text-xs font-bold transition',
-                  active ? `${c.bg} text-white` : 'bg-neutral-200 text-neutral-700',
-                )}
-              >
-                {g}
-              </button>
-            )
-          })}
-        </div>
       </header>
 
       {allMissing.length === 0 ? (

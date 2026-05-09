@@ -1,12 +1,15 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { GroupSection } from '@/components/GroupSection'
 import { ProgressBar } from '@/components/ProgressBar'
+import { SearchBar } from '@/components/SearchBar'
 import { useTotals } from '@/lib/state'
 import { cn } from '@/lib/utils'
 
 export function Home() {
   const { have, missing, doubles, total } = useTotals()
   const pct = total > 0 ? Math.round((have / total) * 100) : 0
+  const [query, setQuery] = useState('')
 
   return (
     <div className="flex flex-col gap-5 px-4 pb-24 pt-4">
@@ -31,7 +34,9 @@ export function Home() {
         <StatTile label="Doubles" value={doubles} accent="text-amber-600" to="/doubles" />
       </section>
 
-      <GroupSection />
+      <SearchBar value={query} onChange={setQuery} placeholder="Search by team name or code" />
+
+      <GroupSection query={query} />
     </div>
   )
 }
