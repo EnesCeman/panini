@@ -41,19 +41,19 @@ export type AdminCheck =
   | { status: 'admin'; uid: string }
 
 export function useIsAdmin(): AdminCheck {
-  const auth = useAuth()
+  const authState = useAuth()
   const [check, setCheck] = useState<AdminCheck>({ status: 'loading' })
 
   useEffect(() => {
-    if (auth.status === 'loading') {
+    if (authState.status === 'loading') {
       setCheck({ status: 'loading' })
       return
     }
-    if (auth.status === 'signed-out') {
+    if (authState.status === 'signed-out') {
       setCheck({ status: 'not-signed-in' })
       return
     }
-    const uid = auth.user.uid
+    const uid = authState.user.uid
     let cancelled = false
     getDoc(doc(db, 'admins', uid))
       .then((snap) => {
@@ -70,7 +70,7 @@ export function useIsAdmin(): AdminCheck {
     return () => {
       cancelled = true
     }
-  }, [auth])
+  }, [authState])
 
   return check
 }
