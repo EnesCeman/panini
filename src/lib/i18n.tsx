@@ -21,23 +21,23 @@ const translations = {
     'shell.lang.toggle': 'Language',
 
     // Browse — tabs
-    'browse.tab.spares': 'Spares · {count}',
+    'browse.tab.spares': 'Doubles · {count}',
     'browse.tab.missing': 'Missing · {count}',
 
     // Browse — intro
     'browse.intro.title': 'Hey! Looking to swap World Cup stickers?',
     'browse.intro.lead':
-      'Tabs below: my spares (cards I have spare for swap) and my missing (cards I still need). Tap any to start a proposal with it pre-selected.',
+      'Tabs below: my doubles (cards I have spare for swap) and my missing (cards I still need). Tap any to start a proposal with it pre-selected.',
     'browse.intro.howTitle': 'How to build a trade',
     'browse.intro.howOffer':
-      "Start with what you'd offer: tap a card from Cards I'm missing, then multi-select which of my spares you want in return.",
+      "Start with what you'd offer: tap a card from Cards I'm missing, then multi-select which of my doubles you want in return.",
     'browse.intro.howWant':
-      'Or start with what you want: tap a card from Cards I have spare, then multi-select which of my missing you’d send my way.',
+      'Or start with what you want: tap a card from My doubles, then multi-select which of my missing you’d send my way.',
     'browse.intro.ratioTitle': 'Per-trade ratio (one side must equal 1)',
     'browse.intro.ratio1m':
-      '1 of yours → up to 5 of mine (offer one card I need for up to five of my spares).',
+      '1 of yours → up to 5 of mine (offer one card I need for up to five of my doubles).',
     'browse.intro.ratioN1':
-      'Many of yours → exactly 1 of mine (sweeten the deal: send several cards I need for one specific spare of mine).',
+      'Many of yours → exactly 1 of mine (sweeten the deal: send several cards I need for one specific double of mine).',
     'browse.intro.otherTitle': 'Other things to know',
     'browse.intro.otherBundle':
       'You can bundle multiple trades into a single proposal — add as many trades as you want before submitting.',
@@ -49,7 +49,7 @@ const translations = {
       "Whether to accept is up to me — your proposal lands in my inbox and I'll review it.",
 
     // Browse — sections
-    'browse.section.spares.title': 'Cards I have spare ({count})',
+    'browse.section.spares.title': 'My doubles ({count})',
     'browse.section.spares.subtitle':
       'Anything you want? Tap a team to expand, then tap a card.',
     'browse.section.missing.title': "Cards I'm missing ({count})",
@@ -84,8 +84,8 @@ const translations = {
     'trade.row.remove': 'Remove trade',
     'trade.offer.label': "Cards you're offering (from my missing list)",
     'trade.offer.add': 'Add cards to offer',
-    'trade.offer.multiHint': 'Multiple offered → pick exactly 1 of my spares below.',
-    'trade.want.label': 'Cards you want from me ({total} / {max} of my spares)',
+    'trade.offer.multiHint': 'Multiple offered → pick exactly 1 of my doubles below.',
+    'trade.want.label': 'Cards you want from me ({total} / {max} of my doubles)',
     'trade.want.add': 'Add cards you want',
     'trade.want.spareCount': '{available} available',
     'trade.qty.dec': 'Decrement qty',
@@ -150,23 +150,23 @@ const translations = {
     'shell.lang.toggle': 'Jezik',
 
     // Browse — tabs
-    'browse.tab.spares': 'Viška · {count}',
-    'browse.tab.missing': 'Fale · {count}',
+    'browse.tab.spares': 'Duplikati · {count}',
+    'browse.tab.missing': 'Nedostaje · {count}',
 
     // Browse — intro
     'browse.intro.title': 'Zdravo! Tražiš zamjenu sličica sa Svjetskog prvenstva?',
     'browse.intro.lead':
-      'U karticama ispod: sličice koje imam viška (za zamjenu) i one koje mi još fale. Klikni bilo koju da pokreneš prijedlog razmjene s njom već odabranom.',
+      'U karticama ispod: sličice koje imam viška (za zamjenu) i one koje mi još fale. Klikni bilo koju da pokreneš prijedlog razmjene.',
     'browse.intro.howTitle': 'Kako sastaviti razmjenu',
     'browse.intro.howOffer':
-      'Kreni od onoga što ti nudiš: klikni karticu iz „Sličice koje mi fale“, pa odaberi više mojih sličica viška koje želiš zauzvrat.',
+      'Kreni od onoga što ti nudiš: klikni karticu iz „Sličice koje mi nedostaju", pa odaberi više mojih duplikata koje želiš zauzvrat.',
     'browse.intro.howWant':
-      'Ili kreni od onoga što želiš: klikni karticu iz „Sličice koje imam viška“, pa odaberi više mojih koje mi fale, a ti ih imaš.',
+      'ILI kreni od onoga što želiš: klikni karticu iz „Sličice koje imam viška“, pa odaberi više mojih koje mi fale, a ti ih imaš.',
     'browse.intro.ratioTitle': 'Omjer u jednoj razmjeni (jedna strana mora biti 1)',
     'browse.intro.ratio1m':
-      '1 tvoja → do 5 mojih (jedna sličica koja mi fali za do pet mojih viška).',
+      '1 tvoja → do 5 mojih (jedna sličica koja mi fali za do pet mojih duplikata).',
     'browse.intro.ratioN1':
-      'Više tvojih → tačno 1 moja (zasladi ponudu: pošalji više sličica koje mi fale za jednu konkretnu moju koja ti treba).',
+      'Više tvojih → tačno 1 moja (pošalji više sličica koje mi fale za jednu konkretnu moju koja ti treba, ako takva ponuda ima smisla).',
     'browse.intro.otherTitle': 'Još par stvari',
     'browse.intro.otherBundle':
       'Više razmjena možeš spojiti u jedan prijedlog — dodaj koliko god trebaš prije slanja.',
@@ -181,7 +181,7 @@ const translations = {
     'browse.section.spares.title': 'Sličice koje imam viška ({count})',
     'browse.section.spares.subtitle':
       'Nešto ti se sviđa? Klikni tim da raširiš, pa klikni karticu.',
-    'browse.section.missing.title': 'Sličice koje mi fale ({count})',
+    'browse.section.missing.title': 'Sličice koje mi nedostaju ({count})',
     'browse.section.missing.subtitle':
       'Možda neku od ovih imaš? Pretraži ili klikni tim da raširiš.',
     'browse.cta.buildCustom': 'Napravi vlastiti prijedlog',
@@ -213,11 +213,11 @@ const translations = {
     // Trade row
     'trade.row.title': 'Razmjena {n}',
     'trade.row.remove': 'Ukloni razmjenu',
-    'trade.offer.label': 'Sličice koje nudiš (sa moje liste „fale“)',
+    'trade.offer.label': 'Sličice koje nudiš (sa moje liste "nedostaje")',
     'trade.offer.add': 'Dodaj sličice koje nudiš',
     'trade.offer.multiHint':
-      'Više tvojih → odaberi tačno 1 moju iz viška ispod.',
-    'trade.want.label': 'Sličice koje želiš ({total} / {max} mojih viška)',
+      'Više tvojih → odaberi tačno 1 moju iz duplikata ispod.',
+    'trade.want.label': 'Sličice koje želiš ({total} / {max} mojih duplikata)',
     'trade.want.add': 'Dodaj sličice koje želiš',
     'trade.want.spareCount': '{available} dostupno',
     'trade.qty.dec': 'Smanji količinu',
@@ -236,7 +236,7 @@ const translations = {
     'new.details.contactPlaceholder': 'ja@primjer.com',
     'new.details.note': 'Napomena',
     'new.details.noteOptional': '(neobavezno)',
-    'new.details.notePlaceholder': 'npr. mogu poslati iz Sarajeva',
+    'new.details.notePlaceholder': 'npr. možemo se naći u Sarajevu',
     'new.submit': 'Pošalji prijedlog',
     'new.submit.busy': 'Šaljem…',
     'new.cancel': 'Otkaži i nazad',
