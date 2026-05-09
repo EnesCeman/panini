@@ -1,4 +1,6 @@
+import { ClipboardList } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
+import { CodeChecker } from '@/components/CodeChecker'
 import { CodeSearchInput } from '@/components/CodeSearchInput'
 import { Flag } from '@/components/Flag'
 import { SearchBar } from '@/components/SearchBar'
@@ -45,6 +47,7 @@ export function Cards() {
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
   const [openCode, setOpenCode] = useState<string | null>(null)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   function handleQueryChange(v: string) {
@@ -112,6 +115,16 @@ export function Cards() {
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-lg font-semibold text-neutral-900">Cards</h1>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setBulkOpen(true)}
+              className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
+              aria-label="Bulk code check"
+              title="Paste a list of codes from someone, see what you're missing"
+            >
+              <ClipboardList className="h-3.5 w-3.5" />
+              Check list
+            </button>
             <span className="text-xs tabular-nums text-neutral-500">{filtered.length}</span>
             <SearchModeToggle
               mode={mode}
@@ -174,6 +187,7 @@ export function Cards() {
       )}
 
       <StickerSheet code={openCode} onClose={() => setOpenCode(null)} />
+      {bulkOpen && <CodeChecker onClose={() => setBulkOpen(false)} />}
     </div>
   )
 }
