@@ -234,14 +234,20 @@ function matchesQuery(
   )
 }
 
-// Scrolls so the section's top sits just below the page header (60px).
-// Anchored on the outer <section> (not the sticky child), because the
-// sticky child reports its pinned position when active, which would
-// produce a no-op scroll. We only pull UP — never yank the user down
-// if they're already above the section.
-function ensureSectionAtTop(sectionEl: HTMLElement | null) {
-  if (!sectionEl) return
-  const target = sectionEl.getBoundingClientRect().top + window.scrollY - 60
+// Scrolls so the sticky search bar pins at top:60 and the section's
+// title/subtitle (which now sit ABOVE the sticky search bar) are tucked
+// under the page header. We anchor on the results container — its
+// natural top minus the sticky bar's height equals the scroll position
+// where the sticky bar is right at top:60. Only pull UP — never yank
+// the user down if they're already above.
+function ensureResultsAtTop(
+  resultsEl: HTMLElement | null,
+  stickyEl: HTMLElement | null,
+) {
+  if (!resultsEl || !stickyEl) return
+  const stickyHeight = stickyEl.getBoundingClientRect().height
+  const resultsDocTop = resultsEl.getBoundingClientRect().top + window.scrollY
+  const target = resultsDocTop - 60 - stickyHeight
   if (window.scrollY > target) {
     window.scrollTo({ top: target, behavior: 'smooth' })
   }
@@ -293,12 +299,13 @@ function MissingSection() {
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map())
-  const sectionRef = useRef<HTMLElement>(null)
+  const stickyRef = useRef<HTMLDivElement>(null)
+  const resultsRef = useRef<HTMLDivElement>(null)
 
   function handleQueryChange(v: string) {
     setQuery(v)
     if (v.length > 0) {
-      ensureSectionAtTop(sectionRef.current)
+      ensureResultsAtTop(resultsRef.current, stickyRef.current)
     }
   }
 
@@ -347,19 +354,22 @@ function MissingSection() {
   const searching = query.length > 0
 
   return (
-    <section ref={sectionRef}>
-      <div className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6">
-        <header className="mb-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-900">
-              Cards I'm missing ({items.length})
-            </h2>
-            <ModeToggle mode={mode} onChange={handleModeChange} />
-          </div>
-          <p className="mt-1 text-[11px] text-neutral-500">
-            You might have one of these? Search or tap a team to expand.
-          </p>
-        </header>
+    <section>
+      <header className="mb-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-neutral-900">
+            Cards I'm missing ({items.length})
+          </h2>
+          <ModeToggle mode={mode} onChange={handleModeChange} />
+        </div>
+        <p className="mt-1 text-[11px] text-neutral-500">
+          You might have one of these? Search or tap a team to expand.
+        </p>
+      </header>
+      <div
+        ref={stickyRef}
+        className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6"
+      >
         {mode === 'code' ? (
           <CodeSearchInput value={query} onChange={handleQueryChange} />
         ) : (
@@ -370,7 +380,7 @@ function MissingSection() {
           />
         )}
       </div>
-      <div className="mt-3 flex flex-col gap-2">
+      <div ref={resultsRef} className="mt-3 flex flex-col gap-2">
         {grouped.length === 0 ? (
           <p className="py-6 text-center text-xs text-neutral-500">No matches</p>
         ) : (
@@ -439,12 +449,13 @@ function DoublesSection() {
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map())
-  const sectionRef = useRef<HTMLElement>(null)
+  const stickyRef = useRef<HTMLDivElement>(null)
+  const resultsRef = useRef<HTMLDivElement>(null)
 
   function handleQueryChange(v: string) {
     setQuery(v)
     if (v.length > 0) {
-      ensureSectionAtTop(sectionRef.current)
+      ensureResultsAtTop(resultsRef.current, stickyRef.current)
     }
   }
 
@@ -503,19 +514,22 @@ function DoublesSection() {
   const searching = query.length > 0
 
   return (
-    <section ref={sectionRef}>
-      <div className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6">
-        <header className="mb-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-900">
-              Cards I have spare ({totalSpare})
-            </h2>
-            <ModeToggle mode={mode} onChange={handleModeChange} />
-          </div>
-          <p className="mt-1 text-[11px] text-neutral-500">
-            Anything you want? Tap a team to expand, then tap a card.
-          </p>
-        </header>
+    <section>
+      <header className="mb-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-neutral-900">
+            Cards I have spare ({totalSpare})
+          </h2>
+          <ModeToggle mode={mode} onChange={handleModeChange} />
+        </div>
+        <p className="mt-1 text-[11px] text-neutral-500">
+          Anything you want? Tap a team to expand, then tap a card.
+        </p>
+      </header>
+      <div
+        ref={stickyRef}
+        className="sticky top-[60px] z-10 -mx-4 bg-neutral-50 px-4 pb-2 pt-1 md:-mx-6 md:px-6"
+      >
         {mode === 'code' ? (
           <CodeSearchInput value={query} onChange={handleQueryChange} />
         ) : (
@@ -526,7 +540,7 @@ function DoublesSection() {
           />
         )}
       </div>
-      <div className="mt-3 flex flex-col gap-2">
+      <div ref={resultsRef} className="mt-3 flex flex-col gap-2">
         {grouped.length === 0 ? (
           <p className="py-6 text-center text-xs text-neutral-500">No matches</p>
         ) : (
