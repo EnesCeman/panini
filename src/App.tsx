@@ -11,8 +11,18 @@ import { Inbox } from '@/pages/inbox/Inbox'
 import { Missing } from '@/pages/Missing'
 import { TeamDetail } from '@/pages/TeamDetail'
 
+function getPath(): string {
+  return typeof window !== 'undefined' ? window.location.pathname : '/'
+}
+
+function isInboxPath(path: string): boolean {
+  return path === '/inbox' || path.startsWith('/inbox/')
+}
+
 export default function App() {
   const adminCheck = useIsAdmin()
+  const path = getPath()
+  const onInbox = isInboxPath(path)
 
   useEffect(() => {
     const unsubStickers = subscribeStickers()
@@ -24,13 +34,16 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    // /inbox is the sign-in entry point — never redirect away from it,
+    // otherwise the admin can never reach the AuthGate to sign in.
+    if (onInbox) return
     if (
       adminCheck.status === 'not-signed-in' ||
       adminCheck.status === 'not-admin'
     ) {
       window.location.replace('/market')
     }
-  }, [adminCheck])
+  }, [adminCheck, onInbox])
 
   if (adminCheck.status === 'loading') {
     return (
@@ -40,7 +53,7 @@ export default function App() {
     )
   }
 
-  if (adminCheck.status !== 'admin') {
+  if (adminCheck.status !== 'admin' && !onInbox) {
     return (
       <div className="flex min-h-dvh items-center justify-center text-sm text-neutral-500">
         Redirecting to marketplace…
