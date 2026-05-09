@@ -86,14 +86,14 @@ export function Missing() {
                 <span className="truncate text-sm font-semibold text-neutral-900 group-hover:underline">
                   {team.name}
                 </span>
+                <ChevronRight
+                  className="-ml-1 h-4 w-4 shrink-0 text-neutral-400 transition group-hover:text-neutral-700"
+                  strokeWidth={2.5}
+                />
                 <GroupPill group={team.group} />
                 <span className="ml-auto text-xs tabular-nums text-neutral-500">
                   {items.length}
                 </span>
-                <ChevronRight
-                  className="h-4 w-4 shrink-0 text-neutral-400 transition group-hover:text-neutral-700"
-                  strokeWidth={2.5}
-                />
               </Link>
               <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                 {items.map((s, idx) => (

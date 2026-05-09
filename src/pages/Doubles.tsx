@@ -99,11 +99,11 @@ export function Doubles() {
                 <span className="truncate text-sm font-semibold text-neutral-900 group-hover:underline">
                   {team.name}
                 </span>
-                <GroupPill group={team.group} />
                 <ChevronRight
-                  className="ml-auto h-4 w-4 shrink-0 text-neutral-400 transition group-hover:text-neutral-700"
+                  className="-ml-1 h-4 w-4 shrink-0 text-neutral-400 transition group-hover:text-neutral-700"
                   strokeWidth={2.5}
                 />
+                <GroupPill group={team.group} />
               </Link>
               <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                 {items.map((s, idx) => (
