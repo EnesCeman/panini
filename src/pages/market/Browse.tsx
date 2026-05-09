@@ -347,7 +347,7 @@ function DoublesSection() {
                           {labelFor(s.code, s.num, s.name)}
                         </div>
                         <div className="text-[11px] tabular-nums text-neutral-500">
-                          {s.code} · {s.available} of {s.count - 1} spare
+                          {s.available} of {s.count - 1} spare
                         </div>
                       </div>
                       {allReserved ? (
@@ -355,6 +355,7 @@ function DoublesSection() {
                       ) : reserved > 0 ? (
                         <ReservationBadge kind="partial-reserved" reserved={reserved} />
                       ) : null}
+                      <span className="text-xs tabular-nums text-neutral-400">{s.code}</span>
                     </>
                   )
                   return (

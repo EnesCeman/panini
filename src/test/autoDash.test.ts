@@ -32,4 +32,9 @@ describe('applyAutoDash', () => {
   it('handles empty input', () => {
     expect(applyAutoDash('', codes)).toBe('')
   })
+
+  it('collapses consecutive dashes (user typed "-" after the auto-inserted one)', () => {
+    expect(applyAutoDash('POR--', codes)).toBe('POR-')
+    expect(applyAutoDash('POR---5', codes)).toBe('POR-5')
+  })
 })
