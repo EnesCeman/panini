@@ -108,20 +108,20 @@ export function TradeRow({
               className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-300 px-3 py-1 text-xs text-neutral-600"
             >
               <Plus className="h-3.5 w-3.5" />
-              Add offered
+              Add cards to offer
             </button>
           )}
         </div>
         {trade.offered.length > 1 && (
           <p className="mt-2 text-[11px] text-neutral-500">
-            Multiple offered → I want exactly 1 of yours.
+            Multiple offered → pick exactly 1 of my spares below.
           </p>
         )}
       </section>
 
       <section>
         <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-          I want ({totalRequested} / {trade.offered.length === 1 ? 5 : 1} of your spares)
+          Cards you want from me ({totalRequested} / {trade.offered.length === 1 ? 5 : 1} of my spares)
         </h4>
         <div className="flex flex-col gap-2">
           {trade.requested.map((r, ri) => {
@@ -209,7 +209,7 @@ export function TradeRow({
               className="inline-flex items-center gap-1 self-start rounded-full border border-dashed border-neutral-300 px-3 py-1 text-xs text-neutral-600"
             >
               <Plus className="h-3.5 w-3.5" />
-              Add requested
+              Add cards you want
             </button>
           )}
         </div>
