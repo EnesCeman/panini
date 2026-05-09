@@ -34,8 +34,8 @@ export function Browse() {
     <div className="flex flex-col gap-6 px-4 pt-3 md:px-6">
       <Intro />
       <div className="flex flex-col gap-6 md:grid md:grid-cols-2 md:items-start md:gap-6">
-        <MissingSection />
         <DoublesSection />
+        <MissingSection />
       </div>
       <Link to="/market/new" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
         <Button className="rounded-full shadow-lg">Build a custom proposal</Button>
@@ -259,7 +259,7 @@ function MissingSection() {
                       <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-neutral-200 px-1.5 text-[11px] font-bold text-neutral-700">
                         {s.num}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-sm text-neutral-900">
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900">
                         {labelFor(s.code, s.num, s.name)}
                       </span>
                       {(incoming.get(s.code) ?? 0) > 0 && (
