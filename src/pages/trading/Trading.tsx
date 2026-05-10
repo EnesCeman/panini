@@ -1,4 +1,4 @@
-import { ChevronRight, Plus } from 'lucide-react'
+import { ChevronRight, Lock, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -112,14 +112,22 @@ function TradeRow({ trade }: { trade: Trade }) {
       className="flex items-center gap-3 overflow-hidden rounded-lg border border-neutral-200 bg-white px-3 py-2.5 active:bg-neutral-50"
     >
       <div className="min-w-0 flex-1">
-        <div
-          className={cn(
-            'truncate text-sm font-semibold',
-            trade.subject.length > 0 ? 'text-neutral-900' : 'text-neutral-400',
+        <div className="flex items-center gap-1.5">
+          {trade.locked && trade.status === 'pending' && (
+            <Lock className="h-3 w-3 shrink-0 text-amber-600" aria-label="Locked" />
           )}
-        >
-          {trade.subject.length > 0 ? trade.subject : 'Untitled trade'}
+          <div
+            className={cn(
+              'truncate text-sm font-semibold',
+              trade.subject.length > 0 ? 'text-neutral-900' : 'text-neutral-400',
+            )}
+          >
+            {trade.subject.length > 0 ? trade.subject : 'Untitled trade'}
+          </div>
         </div>
+        {trade.contact.length > 0 && (
+          <div className="truncate text-[11px] text-neutral-600">{trade.contact}</div>
+        )}
         <div className="truncate text-[11px] text-neutral-500">
           Giving {trade.give.length} · Getting {trade.get.length} · {updated}
         </div>

@@ -50,6 +50,7 @@ export function TradeDetail() {
   }, [])
 
   const [subject, setSubject] = useState('')
+  const [contact, setContact] = useState('')
   const [giveText, setGiveText] = useState('')
   const [getText, setGetText] = useState('')
   const [notes, setNotes] = useState('')
@@ -62,6 +63,7 @@ export function TradeDetail() {
     if (!trade) return
     if (lastIdRef.current === trade.id) return
     setSubject(trade.subject)
+    setContact(trade.contact)
     setGiveText(formatGroupedCodes(trade.give))
     setGetText(formatGroupedCodes(trade.get))
     setNotes(trade.notes)
@@ -81,6 +83,19 @@ export function TradeDetail() {
     setSubject(next)
     try {
       await updateTrade(trade.id, { subject: next })
+      flashSaved()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  async function saveContact() {
+    if (!trade) return
+    const next = contact.trim()
+    if (next === trade.contact) return
+    setContact(next)
+    try {
+      await updateTrade(trade.id, { contact: next })
       flashSaved()
     } catch (e) {
       console.error(e)
@@ -251,6 +266,17 @@ export function TradeDetail() {
       </div>
 
       <LockSection trade={trade} allTrades={allTrades} onToggle={() => void toggleLock()} />
+
+      <Section title="Contact">
+        <Input
+          value={contact}
+          onChange={(e) => setContact(e.target.value)}
+          onBlur={() => void saveContact()}
+          maxLength={200}
+          placeholder="Phone, Telegram, Instagram, email…"
+          className="text-sm"
+        />
+      </Section>
 
       <Section title="I'm giving" count={trade.give.length}>
         <textarea

@@ -16,6 +16,7 @@ export type TradeStatus = 'pending' | 'completed' | 'cancelled'
 export type Trade = {
   id: string
   subject: string
+  contact: string
   give: string[]
   get: string[]
   notes: string
@@ -52,6 +53,7 @@ export function subscribeTrades(): () => void {
           // Older trades persisted only `name`; treat it as the subject if no
           // explicit subject has been written yet.
           subject: data.subject ?? data.name ?? '',
+          contact: data.contact ?? '',
           give: data.give ?? [],
           get: data.get ?? [],
           notes: data.notes ?? '',
@@ -80,6 +82,7 @@ export function useTrade(id: string | undefined): Trade | undefined {
 export async function createTrade(): Promise<string> {
   const ref = await addDoc(collection(db, 'trades'), {
     subject: '',
+    contact: '',
     give: [],
     get: [],
     notes: '',
@@ -92,7 +95,7 @@ export async function createTrade(): Promise<string> {
 }
 
 type TradePatch = Partial<
-  Pick<Trade, 'subject' | 'give' | 'get' | 'notes' | 'status' | 'locked'>
+  Pick<Trade, 'subject' | 'contact' | 'give' | 'get' | 'notes' | 'status' | 'locked'>
 >
 
 export async function updateTrade(id: string, patch: TradePatch): Promise<void> {
