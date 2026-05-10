@@ -106,13 +106,26 @@ function TradeRow({ trade }: { trade: Trade }) {
     >
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold text-neutral-900">{trade.name}</div>
+        {trade.subject.length > 0 && (
+          <div className="truncate text-[11px] text-neutral-600">{trade.subject}</div>
+        )}
         <div className="truncate text-[11px] text-neutral-500">
           Giving {trade.give.length} · Getting {trade.get.length} · {updated}
         </div>
+        {trade.notes.length > 0 && (
+          <div className="truncate text-[10px] italic text-neutral-400">
+            “{firstLine(trade.notes)}”
+          </div>
+        )}
       </div>
       <ChevronRight className="h-4 w-4 shrink-0 text-neutral-400" />
     </Link>
   )
+}
+
+function firstLine(text: string): string {
+  const idx = text.indexOf('\n')
+  return idx === -1 ? text : text.slice(0, idx)
 }
 
 function formatRelative(ms: number): string {
