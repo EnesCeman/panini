@@ -143,22 +143,22 @@ function TradeRow({ trade }: { trade: Trade }) {
           </div>
         </div>
         {trade.contact.length > 0 && (
-          <CopyableField
-            icon={<Phone className="h-3 w-3 shrink-0" />}
-            value={trade.contact}
-            copied={copiedField === 'contact'}
-            onClick={handleCopy('contact', trade.contact)}
-          />
+          <div className="mt-1">
+            <CopyableField
+              icon={<Phone className="h-3 w-3 shrink-0" />}
+              value={trade.contact}
+              copied={copiedField === 'contact'}
+              onClick={handleCopy('contact', trade.contact)}
+            />
+          </div>
         )}
         {trade.location.length > 0 && (
-          <CopyableField
-            icon={<MapPin className="h-3 w-3 shrink-0" />}
-            value={trade.location}
-            copied={copiedField === 'location'}
-            onClick={handleCopy('location', trade.location)}
-          />
+          <div className="mt-1 inline-flex max-w-full items-center gap-1 text-[11px] text-neutral-600">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span className="truncate">{trade.location}</span>
+          </div>
         )}
-        <div className="truncate text-[11px] text-neutral-500">
+        <div className="mt-1 truncate text-[11px] text-neutral-500">
           Giving {trade.give.length} · Getting {trade.get.length} · {updated}
         </div>
         {trade.notes.length > 0 && (
