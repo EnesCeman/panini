@@ -1,5 +1,6 @@
-import { ClipboardList } from 'lucide-react'
+import { ArrowUpDown, ClipboardList } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
+import { BulkAdjuster } from '@/components/BulkAdjuster'
 import { CodeChecker } from '@/components/CodeChecker'
 import { CodeSearchInput } from '@/components/CodeSearchInput'
 import { Flag } from '@/components/Flag'
@@ -48,6 +49,7 @@ export function Cards() {
   const [mode, setMode] = useState<SearchMode>('name')
   const [openCode, setOpenCode] = useState<string | null>(null)
   const [bulkOpen, setBulkOpen] = useState(false)
+  const [adjustOpen, setAdjustOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   function handleQueryChange(v: string) {
@@ -117,8 +119,18 @@ export function Cards() {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={() => setAdjustOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
+              aria-label="Bulk plus or minus one"
+              title="Paste codes to apply +1 or -1 to all of them at once (after a swap)"
+            >
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              Bulk ±1
+            </button>
+            <button
+              type="button"
               onClick={() => setBulkOpen(true)}
-              className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
+              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
               aria-label="Bulk code check"
               title="Paste a list of codes from someone, see what you're missing"
             >
@@ -188,6 +200,7 @@ export function Cards() {
 
       <StickerSheet code={openCode} onClose={() => setOpenCode(null)} />
       {bulkOpen && <CodeChecker onClose={() => setBulkOpen(false)} />}
+      {adjustOpen && <BulkAdjuster onClose={() => setAdjustOpen(false)} />}
     </div>
   )
 }

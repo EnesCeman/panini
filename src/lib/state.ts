@@ -196,3 +196,42 @@ export async function incrementMany(codes: string[]): Promise<void> {
     )
   }
 }
+
+export async function decrementMany(codes: string[]): Promise<void> {
+  if (codes.length === 0) return
+  const state = useStore.getState()
+  const before = new Map<string, Sticker>()
+  const eligible: string[] = []
+  for (const code of codes) {
+    const prev = state.stickers.get(code) ?? EMPTY_STICKER
+    if (prev.count <= 0) continue
+    before.set(code, prev)
+    eligible.push(code)
+    state.patchSticker(code, { ...prev, count: prev.count - 1 })
+  }
+  if (eligible.length === 0) return
+  const results = await Promise.allSettled(
+    eligible.map((code) =>
+      setDoc(
+        doc(db, 'stickers', code),
+        { count: fsIncrement(-1), updatedAt: serverTimestamp() },
+        { merge: true },
+      ),
+    ),
+  )
+  let failures = 0
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      failures += 1
+      const code = eligible[i]
+      const prev = before.get(code)
+      if (prev) useStore.getState().patchSticker(code, prev)
+      console.error('decrementMany failed for', code, r.reason)
+    }
+  })
+  if (failures > 0) {
+    useStore.getState().pushToast(
+      failures === 1 ? '1 update failed' : `${failures} updates failed`,
+    )
+  }
+}

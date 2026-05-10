@@ -1,0 +1,131 @@
+import { ChevronRight, Plus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { createTrade, subscribeTrades, useTrades, type Trade, type TradeStatus } from '@/lib/trades'
+import { cn } from '@/lib/utils'
+
+const STATUS_LABEL: Record<TradeStatus, string> = {
+  pending: 'Pending',
+  completed: 'Completed',
+  cancelled: "Didn't happen",
+}
+
+const FILTER_ORDER: TradeStatus[] = ['pending', 'completed', 'cancelled']
+
+export function Trading() {
+  const trades = useTrades()
+  const [filter, setFilter] = useState<TradeStatus>('pending')
+  const [creating, setCreating] = useState(false)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const unsub = subscribeTrades()
+    return () => unsub()
+  }, [])
+
+  const counts = useMemo(() => {
+    const c: Record<TradeStatus, number> = { pending: 0, completed: 0, cancelled: 0 }
+    for (const t of trades.values()) c[t.status] += 1
+    return c
+  }, [trades])
+
+  const filtered = useMemo(() => {
+    return Array.from(trades.values())
+      .filter((t) => t.status === filter)
+      .sort((a, b) => {
+        const ta = a.updatedAt?.toMillis() ?? 0
+        const tb = b.updatedAt?.toMillis() ?? 0
+        return tb - ta
+      })
+  }, [trades, filter])
+
+  async function handleCreate() {
+    setCreating(true)
+    try {
+      const id = await createTrade('New trade')
+      navigate(`/trading/${id}`)
+    } catch (e) {
+      console.error(e)
+      setCreating(false)
+    }
+  }
+
+  return (
+    <div className="pb-24">
+      <header
+        className="sticky top-0 z-20 flex flex-col gap-2 border-b border-neutral-200 bg-neutral-50 px-4 pb-3"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-lg font-semibold text-neutral-900">Trading</h1>
+          <Button type="button" size="sm" onClick={() => void handleCreate()} disabled={creating}>
+            <Plus className="h-4 w-4" />
+            New trade
+          </Button>
+        </div>
+        <div className="flex gap-2">
+          {FILTER_ORDER.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setFilter(s)}
+              className={cn(
+                'rounded-full px-3 py-1 text-xs font-medium',
+                filter === s
+                  ? 'bg-neutral-900 text-white'
+                  : 'bg-white text-neutral-700 ring-1 ring-neutral-200',
+              )}
+            >
+              {STATUS_LABEL[s]}
+              <span className="ml-1.5 text-[10px] opacity-70">{counts[s]}</span>
+            </button>
+          ))}
+        </div>
+      </header>
+
+      <div className="flex flex-col gap-2 px-4 pt-4">
+        {filtered.length === 0 ? (
+          <p className="py-12 text-center text-sm text-neutral-500">
+            {filter === 'pending' ? 'No pending trades. Tap “New trade” to start one.' : 'Nothing here.'}
+          </p>
+        ) : (
+          filtered.map((t) => <TradeRow key={t.id} trade={t} />)
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TradeRow({ trade }: { trade: Trade }) {
+  const updated = trade.updatedAt ? formatRelative(trade.updatedAt.toMillis()) : '—'
+  return (
+    <Link
+      to={`/trading/${trade.id}`}
+      className="flex items-center gap-3 overflow-hidden rounded-lg border border-neutral-200 bg-white px-3 py-2.5 active:bg-neutral-50"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-semibold text-neutral-900">{trade.name}</div>
+        <div className="truncate text-[11px] text-neutral-500">
+          Giving {trade.give.length} · Getting {trade.get.length} · {updated}
+        </div>
+      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-neutral-400" />
+    </Link>
+  )
+}
+
+function formatRelative(ms: number): string {
+  const diff = Date.now() - ms
+  const sec = Math.round(diff / 1000)
+  if (sec < 60) return 'just now'
+  const min = Math.round(sec / 60)
+  if (min < 60) return `${min}m ago`
+  const hr = Math.round(min / 60)
+  if (hr < 24) return `${hr}h ago`
+  const d = Math.round(hr / 24)
+  if (d < 30) return `${d}d ago`
+  const date = new Date(ms)
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${pad(date.getMonth() + 1)}/${pad(date.getDate())}`
+}

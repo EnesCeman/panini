@@ -1,12 +1,11 @@
 import { ClipboardCheck, Copy, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { TEAMS, teamByCode } from '@/data/teams'
+import { teamByCode } from '@/data/teams'
+import { parseCodes } from '@/lib/parseCodes'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
-
-const TEAM_CODES = new Set(TEAMS.map((t) => t.code))
 
 type Mode = 'find-missing' | 'find-duplicates'
 
@@ -41,35 +40,6 @@ const COPY: Record<Mode, ModeCopy> = {
     listHeader: 'Duplicates you have (you could offer these)',
     alreadyLabel: "you don't have / have only one",
   },
-}
-
-// Parse a free-form list. Handles 'IRN-2', 'IRN 2', 'IRN2', and the
-// compact 'IRN 2,18,20' form (one prefix → multiple numbers).
-function parseCodes(input: string): { valid: string[]; invalid: string[] } {
-  const valid: string[] = []
-  const invalid: string[] = []
-  const seen = new Set<string>()
-  const upper = input.toUpperCase()
-  const blocks = upper.matchAll(/([A-Z]{3})((?:[\s,;\-]*\d{1,2})+)/g)
-  for (const block of blocks) {
-    const teamCode = block[1]
-    const numbers = Array.from(block[2].matchAll(/\d+/g)).map((m) =>
-      parseInt(m[0], 10),
-    )
-    const knownTeam = TEAM_CODES.has(teamCode)
-    for (const num of numbers) {
-      const code = `${teamCode}-${num}`
-      if (!knownTeam || num < 1 || num > 20) {
-        invalid.push(code)
-        continue
-      }
-      if (!seen.has(code)) {
-        seen.add(code)
-        valid.push(code)
-      }
-    }
-  }
-  return { valid, invalid }
 }
 
 function groupByTeam(codes: Iterable<string>): Map<string, number[]> {

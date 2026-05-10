@@ -13,6 +13,8 @@ import { Inbox } from '@/pages/inbox/Inbox'
 import { Missing } from '@/pages/Missing'
 import { PublicLanding } from '@/pages/PublicLanding'
 import { TeamDetail } from '@/pages/TeamDetail'
+import { TradeDetail } from '@/pages/trading/TradeDetail'
+import { Trading } from '@/pages/trading/Trading'
 
 function getPath(): string {
   return typeof window !== 'undefined' ? window.location.pathname : '/'
@@ -67,6 +69,8 @@ export default function App() {
           <Route path="/doubles" element={<Doubles />} />
           <Route path="/cards" element={<Cards />} />
           <Route path="/players" element={<Navigate to="/cards" replace />} />
+          <Route path="/trading" element={<Trading />} />
+          <Route path="/trading/:id" element={<TradeDetail />} />
           <Route path="/inbox" element={<Inbox />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

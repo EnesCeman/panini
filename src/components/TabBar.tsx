@@ -1,4 +1,4 @@
-import { BookOpen, CircleDashed, Home, Inbox as InboxIcon, Layers } from 'lucide-react'
+import { ArrowLeftRight, BookOpen, CircleDashed, Home, Inbox as InboxIcon, Layers } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useIsAdmin } from '@/lib/auth'
 import { usePendingSubmissionsCount } from '@/lib/submissions'
@@ -9,6 +9,7 @@ const BASE_TABS = [
   { to: '/cards', label: 'Cards', icon: BookOpen },
   { to: '/missing', label: 'Missing', icon: CircleDashed },
   { to: '/doubles', label: 'Duplicates', icon: Layers },
+  { to: '/trading', label: 'Trading', icon: ArrowLeftRight },
 ] as const
 
 export function TabBar() {
