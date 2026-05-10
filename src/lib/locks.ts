@@ -98,6 +98,34 @@ export function findGiveOverlaps(
   return overlaps
 }
 
+// Find codes in this trade's get list that are already incoming via other
+// locked-pending trades. Informational — doesn't block anything — so the
+// user can swap the request for something they actually still need.
+export type GetOverlap = { code: string; otherTrade: LockedTradeRef }
+
+export function findGetOverlaps(
+  thisTradeId: string,
+  thisGet: string[],
+  trades: Iterable<Trade>,
+): GetOverlap[] {
+  const overlaps: GetOverlap[] = []
+  const thisGetSet = new Set(thisGet)
+  for (const t of trades) {
+    if (t.id === thisTradeId) continue
+    if (!isActive(t)) continue
+    const ref: LockedTradeRef = {
+      id: t.id,
+      subject: t.subject.trim().length > 0 ? t.subject : 'Untitled trade',
+    }
+    for (const code of t.get) {
+      if (thisGetSet.has(code)) {
+        overlaps.push({ code, otherTrade: ref })
+      }
+    }
+  }
+  return overlaps
+}
+
 // Public locks: derived snapshot in meta/locks. Admin client writes it
 // whenever trades change; visitor client only reads.
 

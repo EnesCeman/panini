@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   ArrowLeft,
   Check,
   ClipboardCheck,
@@ -14,7 +15,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { TEAMS } from '@/data/teams'
-import { findGiveOverlaps } from '@/lib/locks'
+import { findGetOverlaps, findGiveOverlaps } from '@/lib/locks'
 import { parseCodes } from '@/lib/parseCodes'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
@@ -378,6 +379,35 @@ export function TradeDetail() {
           rows={3}
           className="block w-full rounded-md border border-neutral-200 p-2.5 font-mono text-sm"
         />
+        {(() => {
+          if (trade.get.length === 0) return null
+          const getOverlaps = findGetOverlaps(trade.id, trade.get, allTrades.values())
+          if (getOverlaps.length === 0) return null
+          return (
+            <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+              <div className="flex items-center gap-1 font-semibold">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Already coming via other locked trades:
+              </div>
+              <ul className="mt-1 space-y-0.5">
+                {getOverlaps.map((o) => (
+                  <li key={`${o.code}-${o.otherTrade.id}`}>
+                    <strong className="font-mono">{o.code}</strong> in{' '}
+                    <Link
+                      to={`/trading/${o.otherTrade.id}`}
+                      className="underline hover:text-amber-950"
+                    >
+                      {o.otherTrade.subject}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 italic">
+                You'd end up with duplicates — swap for something else you're missing.
+              </p>
+            </div>
+          )
+        })()}
         {trade.get.length > 0 && (() => {
           const annotated = trade.get.map((code) => {
             const [teamCode, numStr] = code.split('-')
