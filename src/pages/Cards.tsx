@@ -234,33 +234,30 @@ function LockChip({
   outgoing?: LockedTradeRef[]
   incoming?: LockedTradeRef[]
 }) {
-  if (incoming && incoming.length > 0) {
-    const subj = incoming[0].subject
-    const more = incoming.length > 1 ? ` +${incoming.length - 1}` : ''
-    return (
-      <span
-        className="mr-2 inline-flex max-w-[120px] items-center gap-1 truncate rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800"
-        title={incoming.map((r) => r.subject).join(', ')}
-      >
-        <Inbox className="h-3 w-3 shrink-0" />
-        <span className="truncate">{subj}{more}</span>
-      </span>
-    )
-  }
-  if (outgoing && outgoing.length > 0) {
-    const subj = outgoing[0].subject
-    const more = outgoing.length > 1 ? ` +${outgoing.length - 1}` : ''
-    return (
-      <span
-        className="mr-2 inline-flex max-w-[120px] items-center gap-1 truncate rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
-        title={outgoing.map((r) => r.subject).join(', ')}
-      >
-        <Lock className="h-3 w-3 shrink-0" />
-        <span className="truncate">{subj}{more}</span>
-      </span>
-    )
-  }
-  return null
+  const isIncoming = !!(incoming && incoming.length > 0)
+  const refs = isIncoming ? incoming! : outgoing
+  if (!refs || refs.length === 0) return null
+  const Icon = isIncoming ? Inbox : Lock
+  const chipCls = isIncoming
+    ? 'bg-emerald-100 text-emerald-800'
+    : 'bg-amber-100 text-amber-800'
+  return (
+    <div className="mr-2 flex flex-col items-end gap-0.5">
+      {refs.map((r) => (
+        <span
+          key={r.id}
+          className={cn(
+            'inline-flex max-w-[140px] items-center gap-1 truncate rounded-full px-2 py-0.5 text-[10px] font-semibold',
+            chipCls,
+          )}
+          title={r.subject}
+        >
+          <Icon className="h-3 w-3 shrink-0" />
+          <span className="truncate">{r.subject}</span>
+        </span>
+      ))}
+    </div>
+  )
 }
 
 function CountBadge({ count }: { count: number }) {
