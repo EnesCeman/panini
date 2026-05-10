@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Download, Trash2 } from 'lucide-react'
+import { ArrowLeft, Check, ClipboardCheck, Copy, Download, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -401,15 +401,58 @@ function AnnotatedTable({
   rows: AnnotatedRow[]
   showCount?: boolean
 }) {
+  const [copied, setCopied] = useState(false)
   const headerCls =
     tone === 'amber'
       ? 'bg-amber-50 text-amber-800 border-amber-200'
       : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+  const buttonHoverCls =
+    tone === 'amber'
+      ? 'hover:bg-amber-100 active:bg-amber-200'
+      : 'hover:bg-emerald-100 active:bg-emerald-200'
   const iconCls = tone === 'amber' ? 'text-amber-600' : 'text-emerald-600'
+
+  async function handleCopy() {
+    try {
+      const text = formatGroupedCodes(rows.map((r) => r.code))
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   return (
     <div className="mt-2 overflow-hidden rounded-lg border border-neutral-200 bg-white">
-      <div className={cn('border-b px-3 py-1.5 text-[11px] font-semibold', headerCls)}>
-        {title}
+      <div
+        className={cn(
+          'flex items-center justify-between gap-2 border-b px-3 py-1.5 text-[11px] font-semibold',
+          headerCls,
+        )}
+      >
+        <span className="min-w-0 truncate">{title}</span>
+        <button
+          type="button"
+          onClick={() => void handleCopy()}
+          className={cn(
+            'inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+            buttonHoverCls,
+          )}
+          aria-label="Copy list"
+        >
+          {copied ? (
+            <>
+              <ClipboardCheck className="h-3 w-3" />
+              Copied
+            </>
+          ) : (
+            <>
+              <Copy className="h-3 w-3" />
+              Copy
+            </>
+          )}
+        </button>
       </div>
       <ul>
         {rows.map((r, idx) => (
