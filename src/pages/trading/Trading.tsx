@@ -105,7 +105,22 @@ export function Trading() {
 }
 
 function TradeRow({ trade }: { trade: Trade }) {
+  const [copied, setCopied] = useState(false)
   const updated = trade.updatedAt ? formatRelative(trade.updatedAt.toMillis()) : '—'
+
+  async function handleCopyContact(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!trade.contact) return
+    try {
+      await navigator.clipboard.writeText(trade.contact)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1200)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   return (
     <Link
       to={`/trading/${trade.id}`}
@@ -126,7 +141,17 @@ function TradeRow({ trade }: { trade: Trade }) {
           </div>
         </div>
         {trade.contact.length > 0 && (
-          <div className="truncate text-[11px] text-neutral-600">{trade.contact}</div>
+          <button
+            type="button"
+            onClick={handleCopyContact}
+            className={cn(
+              'block max-w-full truncate text-left text-[11px] hover:text-emerald-700',
+              copied ? 'text-emerald-700' : 'text-neutral-600',
+            )}
+            title="Click to copy"
+          >
+            {copied ? 'Copied!' : trade.contact}
+          </button>
         )}
         <div className="truncate text-[11px] text-neutral-500">
           Giving {trade.give.length} · Getting {trade.get.length} · {updated}
