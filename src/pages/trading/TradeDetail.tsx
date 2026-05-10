@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, ClipboardCheck, Copy, Download, Trash2 } from 'lucide-react'
+import { ArrowLeft, Check, ClipboardCheck, Copy, Download, Trash2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -81,6 +81,21 @@ export function TradeDetail() {
     if (arraysEqual(parsed, current)) return
     try {
       await updateTrade(trade.id, { [field]: parsed })
+      flashSaved()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  async function removeCode(field: 'give' | 'get', code: string) {
+    if (!trade) return
+    const next = trade[field].filter((c) => c !== code)
+    if (next.length === trade[field].length) return
+    try {
+      await updateTrade(trade.id, { [field]: next })
+      const reformatted = formatGroupedCodes(next)
+      if (field === 'give') setGiveText(reformatted)
+      else setGetText(reformatted)
       flashSaved()
     } catch (e) {
       console.error(e)
@@ -217,7 +232,13 @@ export function TradeDetail() {
           rows={3}
           className="block w-full rounded-md border border-neutral-200 p-2.5 font-mono text-sm"
         />
-        {giveRows.length > 0 && <RowTable rows={giveRows} tone="rose" />}
+        {giveRows.length > 0 && (
+          <RowTable
+            rows={giveRows}
+            tone="rose"
+            onRemove={(code) => void removeCode('give', code)}
+          />
+        )}
       </Section>
 
       <Section title="I'm getting" count={trade.get.length}>
@@ -256,6 +277,7 @@ export function TradeDetail() {
                   tone="amber"
                   rows={alreadyHave}
                   showCount
+                  onRemove={(code) => void removeCode('get', code)}
                 />
               )}
               {newOnes.length > 0 && (
@@ -263,6 +285,7 @@ export function TradeDetail() {
                   title={`New — ${newOnes.length}`}
                   tone="emerald"
                   rows={newOnes}
+                  onRemove={(code) => void removeCode('get', code)}
                 />
               )}
               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700">
@@ -358,7 +381,15 @@ function buildRows(codes: string[], stickers: Map<string, { name: string | null 
   })
 }
 
-function RowTable({ rows, tone }: { rows: Row[]; tone: 'emerald' | 'rose' }) {
+function RowTable({
+  rows,
+  tone,
+  onRemove,
+}: {
+  rows: Row[]
+  tone: 'emerald' | 'rose'
+  onRemove?: (code: string) => void
+}) {
   return (
     <ul className="mt-2 overflow-hidden rounded-lg border border-neutral-200 bg-white">
       {rows.map((r, idx) => (
@@ -381,10 +412,30 @@ function RowTable({ rows, tone }: { rows: Row[]; tone: 'emerald' | 'rose' }) {
                 {r.name} · {r.teamName}
               </div>
             </div>
+            {onRemove && <RemoveButton code={r.code} onRemove={onRemove} />}
           </div>
         </li>
       ))}
     </ul>
+  )
+}
+
+function RemoveButton({
+  code,
+  onRemove,
+}: {
+  code: string
+  onRemove: (code: string) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onRemove(code)}
+      aria-label={`Remove ${code}`}
+      className="shrink-0 rounded-full p-1 text-neutral-300 hover:bg-neutral-100 hover:text-rose-600"
+    >
+      <X className="h-3.5 w-3.5" />
+    </button>
   )
 }
 
@@ -395,11 +446,13 @@ function AnnotatedTable({
   tone,
   rows,
   showCount,
+  onRemove,
 }: {
   title: string
   tone: 'emerald' | 'amber'
   rows: AnnotatedRow[]
   showCount?: boolean
+  onRemove?: (code: string) => void
 }) {
   const [copied, setCopied] = useState(false)
   const headerCls =
@@ -482,6 +535,7 @@ function AnnotatedTable({
                   {r.count >= 2 ? `x${r.count}` : '1'}
                 </span>
               )}
+              {onRemove && <RemoveButton code={r.code} onRemove={onRemove} />}
             </div>
           </li>
         ))}
