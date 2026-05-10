@@ -28,7 +28,7 @@ type Item = {
 export function PublicLanding() {
   const t = usePublicT()
   const stickers = useStickersMap()
-  const [tab, setTab] = useState<Tab>('have')
+  const [tab, setTab] = useState<Tab>('want')
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
   const [selectedHave, setSelectedHave] = useState<Set<string>>(new Set())
@@ -122,7 +122,7 @@ export function PublicLanding() {
         </div>
 
         <div className="inline-flex w-full overflow-hidden rounded-md border border-neutral-200 text-xs font-medium">
-          {(['have', 'want'] as const).map((tk) => {
+          {(['want', 'have'] as const).map((tk) => {
             const count = tk === 'have' ? selectedHave.size : selectedWant.size
             const label =
               tk === 'have'
