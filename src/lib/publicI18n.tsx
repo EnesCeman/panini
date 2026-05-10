@@ -7,10 +7,11 @@ const STORAGE_KEY = 'panini.locale'
 const T = {
   bs: {
     'public.title': 'Razmjena sličica',
-    'public.subtitle': 'Označi šta imaš i šta tražiš, pa pošalji.',
+    'public.subtitle':
+      'Klikni sve što imaš viška i sve što ti fali, pa pošalji. Meni stiže lista i javim ti se na kontakt koji ostaviš — a ti je možeš i preuzeti za sebe.',
     'public.tab.have':
       'Imam ({count})',
-    'public.tab.want': 'Želim ({count})',
+    'public.tab.want': 'Trebam ({count})',
     'public.have.heading': 'Sličice koje meni fale',
     'public.have.sub': 'Označi one koje ti imaš viška.',
     'public.want.heading': 'Sličice koje imam viška',
@@ -31,27 +32,28 @@ const T = {
     'public.modal.note': 'Poruka',
     'public.modal.notePh': 'Bilo šta dodatno (npr. iz kojeg si grada). Neobavezno.',
     'public.modal.summaryHave': 'Imaš ({count})',
-    'public.modal.summaryWant': 'Želiš ({count})',
+    'public.modal.summaryWant': 'Trebaš ({count})',
     'public.modal.send': 'Pošalji',
     'public.modal.sending': 'Šaljem…',
     'public.modal.cancel': 'Odustani',
     'public.modal.error': 'Slanje nije uspjelo. Pokušaj ponovo.',
     'public.success.title': 'Poslano!',
     'public.success.body':
-      'Hvala! Javit ću ti se na ostavljeni kontakt. Ovdje je sažetak za tebe — kopiraj ili spusti CSV ako ti treba.',
+      'Hvala! Javit ću ti se na ostavljeni kontakt. Ovdje je sažetak za tebe — kopiraj ili preuzmi CSV ako ti treba.',
     'public.success.copy': 'Kopiraj listu',
     'public.success.copied': 'Kopirano!',
-    'public.success.csv': 'Skini CSV',
+    'public.success.csv': 'Preuzmi CSV',
     'public.success.again': 'Pošalji još jednu listu',
     'public.success.haveSection': 'Imam (Enesu fali)',
-    'public.success.wantSection': 'Želim (Enes ima viška)',
+    'public.success.wantSection': 'Trebam (Enes ima viška)',
     'public.lang': 'EN',
     'public.requiredName': 'Unesi ime.',
     'public.requiredContact': 'Unesi kontakt.',
   },
   en: {
     'public.title': 'Sticker swap',
-    'public.subtitle': 'Tick what you have and what you want, then send.',
+    'public.subtitle':
+      "Tick everything you have spare and everything you're missing, then send. I'll get the list and reach out on the contact you leave — and you can download a copy for yourself.",
     'public.tab.have': 'I have ({count})',
     'public.tab.want': 'I want ({count})',
     'public.have.heading': "Cards I'm missing",

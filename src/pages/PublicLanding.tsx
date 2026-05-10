@@ -114,11 +114,11 @@ export function PublicLanding() {
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >
         <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold text-neutral-900">{t('public.title')}</h1>
-            <p className="truncate text-[11px] text-neutral-500">{t('public.subtitle')}</p>
+            <p className="text-[11px] leading-snug text-neutral-600">{t('public.subtitle')}</p>
           </div>
-          <LangToggle />
+          <LangToggle className="shrink-0" />
         </div>
 
         <div className="inline-flex w-full overflow-hidden rounded-md border border-neutral-200 text-xs font-medium">
