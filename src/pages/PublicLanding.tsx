@@ -12,7 +12,7 @@ import { TEAMS, stickerKind, type Team } from '@/data/teams'
 import { usePublicLocks } from '@/lib/locks'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
-import { usePublicT } from '@/lib/publicI18n'
+import { pluralForm, usePublicLocale, usePublicT, type TKey } from '@/lib/publicI18n'
 import { useStickersMap } from '@/lib/state'
 import { cn } from '@/lib/utils'
 
@@ -28,6 +28,7 @@ type Item = {
 
 export function PublicLanding() {
   const t = usePublicT()
+  const { locale } = usePublicLocale()
   const stickers = useStickersMap()
   const locks = usePublicLocks()
   const [tab, setTab] = useState<Tab>('want')
@@ -177,8 +178,10 @@ export function PublicLanding() {
       </header>
 
       <div className="px-4 pt-4">
-        <h2 className="text-sm font-semibold text-neutral-900">{heading}</h2>
-        <p className="text-[11px] text-neutral-500">{sub}</p>
+        <h2 className="text-xl font-bold uppercase tracking-tight text-neutral-900">
+          {heading}
+        </h2>
+        <p className="mt-1 text-xs text-neutral-600">{sub}</p>
       </div>
 
       {grouped.length === 0 ? (
@@ -229,11 +232,16 @@ export function PublicLanding() {
                           <div className="truncate text-sm font-medium text-neutral-900">
                             {labelFor(it.code, it.num, it.name)}
                           </div>
-                          {tab === 'want' && (
-                            <div className="text-[11px] text-neutral-500">
-                              {it.count - 1} spare
-                            </div>
-                          )}
+                          {tab === 'want' && (() => {
+                            const spare = it.count - 1
+                            const key =
+                              `public.spare.${pluralForm(spare, locale)}` as TKey
+                            return (
+                              <div className="text-[11px] text-neutral-500">
+                                {t(key, { count: spare })}
+                              </div>
+                            )
+                          })()}
                         </div>
                         <span className="text-xs tabular-nums text-neutral-400">{it.code}</span>
                       </button>

@@ -1,6 +1,6 @@
 import { ChevronRight, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { createTrade, subscribeTrades, useTrades, type Trade, type TradeStatus } from '@/lib/trades'
 import { cn } from '@/lib/utils'
@@ -15,7 +15,14 @@ const FILTER_ORDER: TradeStatus[] = ['pending', 'completed', 'cancelled']
 
 export function Trading() {
   const trades = useTrades()
-  const [filter, setFilter] = useState<TradeStatus>('pending')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const filterParam = searchParams.get('filter')
+  const filter: TradeStatus =
+    filterParam === 'completed' || filterParam === 'cancelled' ? filterParam : 'pending'
+  function setFilter(next: TradeStatus) {
+    if (next === 'pending') setSearchParams({}, { replace: true })
+    else setSearchParams({ filter: next }, { replace: true })
+  }
   const [creating, setCreating] = useState(false)
   const navigate = useNavigate()
 

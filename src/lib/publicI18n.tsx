@@ -9,13 +9,15 @@ const T = {
     'public.title': 'Razmjena sličica',
     'public.subtitle':
       'Klikni sve što imaš viška i sve što ti fali, pa pošalji. Meni stiže lista i javim ti se na kontakt koji ostaviš — a ti je možeš i preuzeti za sebe.',
-    'public.tab.have':
-      'Imam ({count})',
-    'public.tab.want': 'Trebam ({count})',
-    'public.have.heading': 'Sličice koje meni fale',
-    'public.have.sub': 'Označi one koje ti imaš viška.',
-    'public.want.heading': 'Sličice koje imam viška',
+    'public.tab.have': 'Meni fale ({count})',
+    'public.tab.want': 'Moji duplikati ({count})',
+    'public.have.heading': 'Ovo su sličice koje meni fale',
+    'public.have.sub': 'Označi one koje ti imaš viška, javim ti se.',
+    'public.want.heading': 'Ovo su moji duplikati',
     'public.want.sub': 'Označi one koje tebi trebaju.',
+    'public.spare.one': '{count} višak',
+    'public.spare.few': '{count} viška',
+    'public.spare.other': '{count} višaka',
     'public.search.name': 'Igrač, tim…',
     'public.search.code': 'Kod, npr. POR-5',
     'public.empty': 'Nema rezultata',
@@ -54,12 +56,15 @@ const T = {
     'public.title': 'Sticker swap',
     'public.subtitle':
       "Tick everything you have spare and everything you're missing, then send. I'll get the list and reach out on the contact you leave — and you can download a copy for yourself.",
-    'public.tab.have': 'I have ({count})',
-    'public.tab.want': 'I want ({count})',
-    'public.have.heading': "Cards I'm missing",
-    'public.have.sub': 'Tick the ones you have spare.',
-    'public.want.heading': 'Cards I have spare',
+    'public.tab.have': "What I'm missing ({count})",
+    'public.tab.want': 'My duplicates ({count})',
+    'public.have.heading': "These are the cards I'm missing",
+    'public.have.sub': "Tick the ones you have spare and I'll reach out.",
+    'public.want.heading': 'These are my duplicates',
     'public.want.sub': 'Tick the ones you need.',
+    'public.spare.one': '{count} spare',
+    'public.spare.few': '{count} spare',
+    'public.spare.other': '{count} spare',
     'public.search.name': 'Player, team…',
     'public.search.code': 'Code, e.g. POR-5',
     'public.empty': 'No matches',
@@ -110,6 +115,19 @@ function detectLocale(): Locale {
 function format(template: string, vars: Record<string, string | number> | undefined): string {
   if (!vars) return template
   return template.replace(/{(\w+)}/g, (_, key: string) => String(vars[key] ?? ''))
+}
+
+// CLDR-ish plural form selector. Bosnian: one (1, 21, 31, but not 11),
+// few (2-4, 22-24, but not 12-14), other (everything else).
+export function pluralForm(n: number, locale: Locale): 'one' | 'few' | 'other' {
+  if (locale === 'bs') {
+    const mod10 = n % 10
+    const mod100 = n % 100
+    if (mod10 === 1 && mod100 !== 11) return 'one'
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'few'
+    return 'other'
+  }
+  return n === 1 ? 'one' : 'other'
 }
 
 type Ctx = {
