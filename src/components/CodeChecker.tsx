@@ -1,10 +1,12 @@
-import { ClipboardCheck, Copy, X } from 'lucide-react'
+import { ClipboardCheck, Copy, Inbox, Lock, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { teamByCode } from '@/data/teams'
+import { useAdminLocks, type LockedTradeRef } from '@/lib/locks'
 import { parseCodes } from '@/lib/parseCodes'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
+import { useTrades } from '@/lib/trades'
 import { cn } from '@/lib/utils'
 
 type Mode = 'find-missing' | 'find-duplicates'
@@ -15,6 +17,8 @@ type Match = {
   num: number
   name: string
   count: number
+  outgoingLocks: LockedTradeRef[]
+  incomingLocks: LockedTradeRef[]
 }
 
 type ModeCopy = {
@@ -22,6 +26,7 @@ type ModeCopy = {
   hint: string
   emptyHint: string
   listHeader: string
+  lockedHeader: string
   alreadyLabel: string
 }
 
@@ -31,6 +36,7 @@ const COPY: Record<Mode, ModeCopy> = {
     hint: "Paste the list someone sent you of cards they have spare. I'll show you which of those you're missing.",
     emptyHint: 'Paste codes above — I\'ll filter to the ones you\'re missing.',
     listHeader: 'Missing (you might want to ask for these)',
+    lockedHeader: 'Already coming via pending trades',
     alreadyLabel: 'you already have',
   },
   'find-duplicates': {
@@ -38,6 +44,7 @@ const COPY: Record<Mode, ModeCopy> = {
     hint: "Paste a list of cards someone is missing. I'll show which of those you have as duplicates and could give.",
     emptyHint: 'Paste codes above — I\'ll filter to the ones you have as duplicates.',
     listHeader: 'Duplicates you have (you could offer these)',
+    lockedHeader: 'Already promised in pending trades',
     alreadyLabel: "you don't have / have only one",
   },
 }
@@ -66,6 +73,8 @@ type Props = {
 
 export function CodeChecker({ onClose }: Props) {
   const stickers = useStickersMap()
+  const trades = useTrades()
+  const locks = useAdminLocks(trades)
   const [mode, setMode] = useState<Mode>('find-missing')
   const [input, setInput] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -88,22 +97,40 @@ export function CodeChecker({ onClose }: Props) {
         num,
         name,
         count: sticker?.count ?? 0,
+        outgoingLocks: locks.outgoing.get(code) ?? [],
+        incomingLocks: locks.incoming.get(code) ?? [],
       }
     })
-  }, [parsed, stickers])
+  }, [parsed, stickers, locks])
 
-  const actionable = useMemo<Match[]>(() => {
-    if (mode === 'find-missing') return matches.filter((m) => m.count === 0)
-    return matches.filter((m) => m.count >= 2)
+  // Free actionable = match is in scope AND not already covered by a locked
+  // pending trade. Locked actionable = same scope, but a pending trade
+  // already handles it (incoming for find-missing, outgoing for duplicates).
+  // For duplicates we compare spare count vs outgoing locks so a sticker
+  // with extra spares beyond what's locked still shows as free.
+  const { freeActionable, lockedActionable } = useMemo(() => {
+    if (mode === 'find-missing') {
+      const free = matches.filter((m) => m.count === 0 && m.incomingLocks.length === 0)
+      const locked = matches.filter((m) => m.count === 0 && m.incomingLocks.length > 0)
+      return { freeActionable: free, lockedActionable: locked }
+    }
+    const free = matches.filter((m) => m.count >= 2 && m.count - 1 - m.outgoingLocks.length > 0)
+    const locked = matches.filter((m) => m.count >= 2 && m.count - 1 - m.outgoingLocks.length <= 0)
+    return { freeActionable: free, lockedActionable: locked }
   }, [matches, mode])
+
+  const actionable = useMemo<Match[]>(
+    () => [...freeActionable, ...lockedActionable],
+    [freeActionable, lockedActionable],
+  )
 
   const otherCount = matches.length - actionable.length
 
-  // Auto-select the actionable list whenever inputs OR mode change. User
-  // can toggle off any they don't want before copying.
+  // Auto-select free items only — locked ones stay opt-in since they're
+  // either already coming in or already promised away.
   const parsedKey = parsed.valid.join(',')
   useEffect(() => {
-    setSelected(new Set(actionable.map((m) => m.code)))
+    setSelected(new Set(freeActionable.map((m) => m.code)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parsedKey, mode])
 
@@ -193,9 +220,18 @@ export function CodeChecker({ onClose }: Props) {
           <div className="mt-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-[11px] text-neutral-600">
             Found <strong>{parsed.valid.length}</strong> valid:{' '}
             <strong className="text-emerald-700">
-              {actionable.length}{' '}
+              {freeActionable.length}{' '}
               {mode === 'find-missing' ? 'missing' : 'duplicates'}
             </strong>
+            {lockedActionable.length > 0 && (
+              <>
+                {' '}·{' '}
+                <strong className="text-amber-700">
+                  {lockedActionable.length}{' '}
+                  {mode === 'find-missing' ? 'already coming' : 'already promised'}
+                </strong>
+              </>
+            )}
             , {otherCount} {COPY[mode].alreadyLabel}
             {parsed.invalid.length > 0 && (
               <>
@@ -210,65 +246,59 @@ export function CodeChecker({ onClose }: Props) {
         )}
 
         {actionable.length > 0 && (
+          <div className="mb-2 mt-4 flex items-center justify-end gap-3 text-xs">
+            <button
+              type="button"
+              onClick={selectAll}
+              className="text-neutral-600 hover:text-neutral-900"
+            >
+              Select all
+            </button>
+            <button
+              type="button"
+              onClick={clearAll}
+              className="text-neutral-600 hover:text-neutral-900"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
+        {freeActionable.length > 0 && (
           <>
-            <div className="mb-2 mt-4 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-neutral-900">
-                {COPY[mode].listHeader} ({selected.size}/{actionable.length})
-              </h3>
-              <div className="flex gap-3 text-xs">
-                <button
-                  type="button"
-                  onClick={selectAll}
-                  className="text-neutral-600 hover:text-neutral-900"
-                >
-                  Select all
-                </button>
-                <button
-                  type="button"
-                  onClick={clearAll}
-                  className="text-neutral-600 hover:text-neutral-900"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-            <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
-              {actionable.map((m, idx) => {
-                const team = teamByCode(m.teamCode)
-                const isSelected = selected.has(m.code)
-                return (
-                  <li
-                    key={m.code}
-                    className={cn(
-                      idx !== actionable.length - 1 &&
-                        'border-b border-neutral-100',
-                    )}
-                  >
-                    <label className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm active:bg-neutral-50">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggle(m.code)}
-                        className="h-4 w-4"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium text-neutral-900">
-                          {m.name}
-                        </div>
-                        <div className="text-[11px] text-neutral-500">
-                          {team ? team.name : m.teamCode}
-                          {mode === 'find-duplicates' &&
-                            ` · ${m.count - 1} spare`}
-                        </div>
-                      </div>
-                      <span className="text-xs tabular-nums text-neutral-400">
-                        {m.code}
-                      </span>
-                    </label>
-                  </li>
-                )
-              })}
-            </ul>
+            <h3 className="mb-2 text-sm font-semibold text-neutral-900">
+              {COPY[mode].listHeader} (
+              {freeActionable.filter((m) => selected.has(m.code)).length}/
+              {freeActionable.length})
+            </h3>
+            <MatchList
+              matches={freeActionable}
+              mode={mode}
+              selected={selected}
+              onToggle={toggle}
+            />
+          </>
+        )}
+
+        {lockedActionable.length > 0 && (
+          <>
+            <h3 className="mb-2 mt-4 flex items-center gap-1.5 text-sm font-semibold text-amber-800">
+              {mode === 'find-missing' ? (
+                <Inbox className="h-3.5 w-3.5" />
+              ) : (
+                <Lock className="h-3.5 w-3.5" />
+              )}
+              {COPY[mode].lockedHeader} (
+              {lockedActionable.filter((m) => selected.has(m.code)).length}/
+              {lockedActionable.length})
+            </h3>
+            <MatchList
+              matches={lockedActionable}
+              mode={mode}
+              selected={selected}
+              onToggle={toggle}
+              locked
+            />
           </>
         )}
 
@@ -310,3 +340,77 @@ export function CodeChecker({ onClose }: Props) {
   )
 }
 
+function MatchList({
+  matches,
+  mode,
+  selected,
+  onToggle,
+  locked,
+}: {
+  matches: Match[]
+  mode: Mode
+  selected: Set<string>
+  onToggle: (code: string) => void
+  locked?: boolean
+}) {
+  return (
+    <ul
+      className={cn(
+        'overflow-hidden rounded-lg border bg-white',
+        locked ? 'border-amber-200' : 'border-neutral-200',
+      )}
+    >
+      {matches.map((m, idx) => {
+        const team = teamByCode(m.teamCode)
+        const isSelected = selected.has(m.code)
+        const trades =
+          mode === 'find-missing' ? m.incomingLocks : m.outgoingLocks
+        return (
+          <li
+            key={m.code}
+            className={cn(
+              idx !== matches.length - 1 &&
+                (locked ? 'border-b border-amber-100' : 'border-b border-neutral-100'),
+            )}
+          >
+            <label
+              className={cn(
+                'flex cursor-pointer items-center gap-3 px-3 py-2 text-sm',
+                locked ? 'active:bg-amber-50' : 'active:bg-neutral-50',
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => onToggle(m.code)}
+                className="h-4 w-4"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium text-neutral-900">
+                  {m.name}
+                </div>
+                <div className="text-[11px] text-neutral-500">
+                  {team ? team.name : m.teamCode}
+                  {mode === 'find-duplicates' && ` · ${m.count - 1} spare`}
+                  {locked && trades.length > 0 && (
+                    <>
+                      {' · '}
+                      <span className="text-amber-700">
+                        {mode === 'find-missing' ? 'from' : 'in'}{' '}
+                        {trades[0].subject}
+                        {trades.length > 1 && ` +${trades.length - 1}`}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <span className="text-xs tabular-nums text-neutral-400">
+                {m.code}
+              </span>
+            </label>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
