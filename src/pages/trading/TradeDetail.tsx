@@ -156,7 +156,6 @@ export function TradeDetail() {
   }
 
   const giveRows = buildRows(trade.give, stickers)
-  const getRows = buildRows(trade.get, stickers)
 
   return (
     <div className="pb-24">
@@ -230,7 +229,56 @@ export function TradeDetail() {
           rows={3}
           className="block w-full rounded-md border border-neutral-200 p-2.5 font-mono text-sm"
         />
-        {getRows.length > 0 && <RowTable rows={getRows} tone="emerald" />}
+        {trade.get.length > 0 && (() => {
+          const annotated = trade.get.map((code) => {
+            const [teamCode, numStr] = code.split('-')
+            const team = TEAM_BY_CODE.get(teamCode)
+            const num = parseInt(numStr, 10)
+            const sticker = stickers.get(code)
+            const userName = sticker?.name ?? null
+            const album = albumPlayerName(code)
+            const name = userName ?? album ?? resolvePlayerLabel(code, null) ?? code
+            return {
+              code,
+              teamName: team?.name ?? teamCode,
+              num,
+              name,
+              count: sticker?.count ?? 0,
+            }
+          })
+          const alreadyHave = annotated.filter((r) => r.count > 0)
+          const newOnes = annotated.filter((r) => r.count === 0)
+          return (
+            <>
+              {alreadyHave.length > 0 && (
+                <AnnotatedTable
+                  title={`Already in collection — ${alreadyHave.length} (possible mistake)`}
+                  tone="amber"
+                  rows={alreadyHave}
+                  showCount
+                />
+              )}
+              {newOnes.length > 0 && (
+                <AnnotatedTable
+                  title={`New — ${newOnes.length}`}
+                  tone="emerald"
+                  rows={newOnes}
+                />
+              )}
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700">
+                <span>
+                  Offered <strong>{trade.get.length}</strong>
+                </span>
+                <span className="text-emerald-700">
+                  · <strong>{newOnes.length}</strong> new
+                </span>
+                <span className="text-amber-700">
+                  · <strong>{alreadyHave.length}</strong> already have
+                </span>
+              </div>
+            </>
+          )
+        })()}
       </Section>
 
       <Section title="Notes">
@@ -337,6 +385,65 @@ function RowTable({ rows, tone }: { rows: Row[]; tone: 'emerald' | 'rose' }) {
         </li>
       ))}
     </ul>
+  )
+}
+
+type AnnotatedRow = Row & { count: number }
+
+function AnnotatedTable({
+  title,
+  tone,
+  rows,
+  showCount,
+}: {
+  title: string
+  tone: 'emerald' | 'amber'
+  rows: AnnotatedRow[]
+  showCount?: boolean
+}) {
+  const headerCls =
+    tone === 'amber'
+      ? 'bg-amber-50 text-amber-800 border-amber-200'
+      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+  const iconCls = tone === 'amber' ? 'text-amber-600' : 'text-emerald-600'
+  return (
+    <div className="mt-2 overflow-hidden rounded-lg border border-neutral-200 bg-white">
+      <div className={cn('border-b px-3 py-1.5 text-[11px] font-semibold', headerCls)}>
+        {title}
+      </div>
+      <ul>
+        {rows.map((r, idx) => (
+          <li
+            key={`${r.code}-${idx}`}
+            className={idx !== rows.length - 1 ? 'border-b border-neutral-100' : undefined}
+          >
+            <div className="flex items-center gap-3 px-3 py-2">
+              <Check className={cn('h-3.5 w-3.5 shrink-0', iconCls)} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-xs font-mono font-semibold text-neutral-900">
+                  {r.code}
+                </div>
+                <div className="truncate text-[11px] text-neutral-600">
+                  {r.name} · {r.teamName}
+                </div>
+              </div>
+              {showCount && r.count > 0 && (
+                <span
+                  className={cn(
+                    'inline-flex h-6 min-w-9 shrink-0 items-center justify-center rounded-full px-2 text-[11px] font-bold',
+                    r.count >= 2
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-emerald-600 text-white',
+                  )}
+                >
+                  {r.count >= 2 ? `x${r.count}` : '1'}
+                </span>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
