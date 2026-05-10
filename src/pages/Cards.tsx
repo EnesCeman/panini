@@ -1,8 +1,9 @@
-import { ArrowUpDown, ClipboardList } from 'lucide-react'
+import { ArrowUpDown, ClipboardList, GitCompare } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { BulkAdjuster } from '@/components/BulkAdjuster'
 import { CodeChecker } from '@/components/CodeChecker'
 import { CodeSearchInput } from '@/components/CodeSearchInput'
+import { OverlapChecker } from '@/components/OverlapChecker'
 import { Flag } from '@/components/Flag'
 import { SearchBar } from '@/components/SearchBar'
 import { SearchModeToggle, type SearchMode } from '@/components/SearchModeToggle'
@@ -50,6 +51,7 @@ export function Cards() {
   const [openCode, setOpenCode] = useState<string | null>(null)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [adjustOpen, setAdjustOpen] = useState(false)
+  const [overlapOpen, setOverlapOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   function handleQueryChange(v: string) {
@@ -117,6 +119,16 @@ export function Cards() {
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-lg font-semibold text-neutral-900">Cards</h1>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOverlapOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
+              aria-label="Overlap check"
+              title="Find codes that appear in both of two lists (spot double-promised stickers)"
+            >
+              <GitCompare className="h-3.5 w-3.5" />
+              Overlap
+            </button>
             <button
               type="button"
               onClick={() => setAdjustOpen(true)}
@@ -201,6 +213,7 @@ export function Cards() {
       <StickerSheet code={openCode} onClose={() => setOpenCode(null)} />
       {bulkOpen && <CodeChecker onClose={() => setBulkOpen(false)} />}
       {adjustOpen && <BulkAdjuster onClose={() => setAdjustOpen(false)} />}
+      {overlapOpen && <OverlapChecker onClose={() => setOverlapOpen(false)} />}
     </div>
   )
 }
