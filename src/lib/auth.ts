@@ -55,18 +55,42 @@ export function useIsAdmin(): AdminCheck {
     }
     const uid = authState.user.uid
     let cancelled = false
-    getDoc(doc(db, 'admins', uid))
-      .then((snap) => {
+
+    // Right after sign-in (especially after a domain change forces a fresh
+    // session), the Firestore client can briefly lack the new auth token
+    // and return permission-denied on the admins lookup. That used to flip
+    // the user to 'not-admin' and flash the rejection screen even though
+    // they were a real admin. Retry a few times with backoff so transient
+    // errors stay as 'loading'; only a confirmed missing doc marks
+    // not-admin.
+    async function check() {
+      const delays = [0, 400, 900, 1800]
+      for (let attempt = 0; attempt < delays.length; attempt++) {
         if (cancelled) return
-        setCheck(
-          snap.exists()
-            ? { status: 'admin', uid }
-            : { status: 'not-admin', uid },
-        )
-      })
-      .catch(() => {
-        if (!cancelled) setCheck({ status: 'not-admin', uid })
-      })
+        if (delays[attempt] > 0) {
+          await new Promise((r) => setTimeout(r, delays[attempt]))
+          if (cancelled) return
+        }
+        try {
+          const snap = await getDoc(doc(db, 'admins', uid))
+          if (cancelled) return
+          setCheck(
+            snap.exists()
+              ? { status: 'admin', uid }
+              : { status: 'not-admin', uid },
+          )
+          return
+        } catch (err) {
+          if (attempt === delays.length - 1) {
+            console.error('admin check failed after retries', err)
+            if (!cancelled) setCheck({ status: 'not-admin', uid })
+            return
+          }
+        }
+      }
+    }
+    void check()
+
     return () => {
       cancelled = true
     }
