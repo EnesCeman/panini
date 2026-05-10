@@ -117,47 +117,48 @@ export function Cards() {
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >
         <div className="flex items-center justify-between gap-2">
-          <h1 className="text-lg font-semibold text-neutral-900">Cards</h1>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setOverlapOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
-              aria-label="Overlap check"
-              title="Find codes that appear in both of two lists (spot double-promised stickers)"
-            >
-              <GitCompare className="h-3.5 w-3.5" />
-              Overlap
-            </button>
-            <button
-              type="button"
-              onClick={() => setAdjustOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
-              aria-label="Bulk plus or minus one"
-              title="Paste codes to apply +1 or -1 to all of them at once (after a swap)"
-            >
-              <ArrowUpDown className="h-3.5 w-3.5" />
-              Bulk ±1
-            </button>
-            <button
-              type="button"
-              onClick={() => setBulkOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
-              aria-label="Bulk code check"
-              title="Paste a list of codes from someone, see what you're missing"
-            >
-              <ClipboardList className="h-3.5 w-3.5" />
-              Check list
-            </button>
-            <span className="text-xs tabular-nums text-neutral-500">{filtered.length}</span>
-            <SearchModeToggle
-              mode={mode}
-              onChange={(m) => {
-                setMode(m)
-                setQuery('')
-              }}
-            />
-          </div>
+          <h1 className="text-lg font-semibold text-neutral-900">
+            Cards <span className="ml-1 text-sm font-normal tabular-nums text-neutral-500">{filtered.length}</span>
+          </h1>
+          <SearchModeToggle
+            mode={mode}
+            onChange={(m) => {
+              setMode(m)
+              setQuery('')
+            }}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setBulkOpen(true)}
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
+            aria-label="Bulk code check"
+            title="Paste a list of codes from someone, see what you're missing"
+          >
+            <ClipboardList className="h-3.5 w-3.5" />
+            Check list
+          </button>
+          <button
+            type="button"
+            onClick={() => setAdjustOpen(true)}
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
+            aria-label="Bulk plus or minus one"
+            title="Paste codes to apply +1 or -1 to all of them at once (after a swap)"
+          >
+            <ArrowUpDown className="h-3.5 w-3.5" />
+            Bulk ±1
+          </button>
+          <button
+            type="button"
+            onClick={() => setOverlapOpen(true)}
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
+            aria-label="Overlap check"
+            title="Find codes that appear in both of two lists (spot double-promised stickers)"
+          >
+            <GitCompare className="h-3.5 w-3.5" />
+            Overlap
+          </button>
         </div>
         {mode === 'code' ? (
           <CodeSearchInput value={query} onChange={handleQueryChange} />

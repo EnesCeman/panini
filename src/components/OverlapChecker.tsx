@@ -1,11 +1,12 @@
 import { ClipboardCheck, Copy, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { TEAMS } from '@/data/teams'
 import { parseCodes } from '@/lib/parseCodes'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
 import { formatGroupedCodes } from '@/lib/submissions'
+import { subscribeTrades, useTrades } from '@/lib/trades'
 
 const TEAM_BY_CODE = new Map(TEAMS.map((t) => [t.code, t]))
 
@@ -15,9 +16,56 @@ type Props = {
 
 export function OverlapChecker({ onClose }: Props) {
   const stickers = useStickersMap()
+  const trades = useTrades()
   const [textA, setTextA] = useState('')
   const [textB, setTextB] = useState('')
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    const unsub = subscribeTrades()
+    return () => unsub()
+  }, [])
+
+  const tradeOptions = useMemo(() => {
+    const out: { value: string; label: string; codes: string[] }[] = []
+    const sorted = Array.from(trades.values()).sort((a, b) => {
+      // Pending first, then most-recently-updated.
+      const aPending = a.status === 'pending' ? 0 : 1
+      const bPending = b.status === 'pending' ? 0 : 1
+      if (aPending !== bPending) return aPending - bPending
+      const ta = a.updatedAt?.toMillis() ?? 0
+      const tb = b.updatedAt?.toMillis() ?? 0
+      return tb - ta
+    })
+    for (const t of sorted) {
+      const subj = t.subject.trim().length > 0 ? t.subject : 'Untitled'
+      const tag = t.status === 'pending' ? '' : ` (${t.status})`
+      if (t.give.length > 0) {
+        out.push({
+          value: `${t.id}:give`,
+          label: `${subj} · giving ${t.give.length}${tag}`,
+          codes: t.give,
+        })
+      }
+      if (t.get.length > 0) {
+        out.push({
+          value: `${t.id}:get`,
+          label: `${subj} · getting ${t.get.length}${tag}`,
+          codes: t.get,
+        })
+      }
+    }
+    return out
+  }, [trades])
+
+  function pullFromTrade(target: 'A' | 'B', value: string) {
+    if (!value) return
+    const opt = tradeOptions.find((o) => o.value === value)
+    if (!opt) return
+    const text = formatGroupedCodes(opt.codes)
+    if (target === 'A') setTextA(text)
+    else setTextB(text)
+  }
 
   const parsedA = useMemo(() => parseCodes(textA), [textA])
   const parsedB = useMemo(() => parseCodes(textB), [textB])
@@ -83,44 +131,27 @@ export function OverlapChecker({ onClose }: Props) {
           spotting the same sticker promised across two pending trades.
         </p>
 
-        <div className="space-y-3">
-          <div>
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-neutral-700">
-              List A
-            </label>
-            <textarea
-              value={textA}
-              onChange={(e) => setTextA(e.target.value)}
-              placeholder="POR 5, GER 12, ARG 9 …"
-              rows={4}
-              className="block w-full rounded-md border border-neutral-200 p-3 font-mono text-sm"
-            />
-            {parsedA.valid.length > 0 && (
-              <p className="mt-1 text-[11px] text-neutral-500">
-                {parsedA.valid.length} valid
-                {parsedA.invalid.length > 0 && ` · ${parsedA.invalid.length} invalid`}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-neutral-700">
-              List B
-            </label>
-            <textarea
-              value={textB}
-              onChange={(e) => setTextB(e.target.value)}
-              placeholder="POR 5, BRA 18, GER 12 …"
-              rows={4}
-              className="block w-full rounded-md border border-neutral-200 p-3 font-mono text-sm"
-            />
-            {parsedB.valid.length > 0 && (
-              <p className="mt-1 text-[11px] text-neutral-500">
-                {parsedB.valid.length} valid
-                {parsedB.invalid.length > 0 && ` · ${parsedB.invalid.length} invalid`}
-              </p>
-            )}
-          </div>
+        <div className="space-y-4">
+          <ListInput
+            label="List A"
+            value={textA}
+            onChange={setTextA}
+            placeholder="POR 5, GER 12, ARG 9 …"
+            tradeOptions={tradeOptions}
+            onPullFromTrade={(v) => pullFromTrade('A', v)}
+            validCount={parsedA.valid.length}
+            invalidCount={parsedA.invalid.length}
+          />
+          <ListInput
+            label="List B"
+            value={textB}
+            onChange={setTextB}
+            placeholder="POR 5, BRA 18, GER 12 …"
+            tradeOptions={tradeOptions}
+            onPullFromTrade={(v) => pullFromTrade('B', v)}
+            validCount={parsedB.valid.length}
+            invalidCount={parsedB.invalid.length}
+          />
         </div>
 
         {parsedA.valid.length > 0 && parsedB.valid.length > 0 && (
@@ -185,6 +216,70 @@ export function OverlapChecker({ onClose }: Props) {
             )}
           </Button>
         </div>
+      )}
+    </div>
+  )
+}
+
+type ListInputProps = {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  placeholder: string
+  tradeOptions: { value: string; label: string; codes: string[] }[]
+  onPullFromTrade: (value: string) => void
+  validCount: number
+  invalidCount: number
+}
+
+function ListInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  tradeOptions,
+  onPullFromTrade,
+  validCount,
+  invalidCount,
+}: ListInputProps) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <label className="text-[11px] font-semibold uppercase tracking-wider text-neutral-700">
+          {label}
+        </label>
+        {tradeOptions.length > 0 && (
+          <select
+            onChange={(e) => {
+              onPullFromTrade(e.target.value)
+              e.target.value = ''
+            }}
+            defaultValue=""
+            className="rounded border border-neutral-200 bg-white px-2 py-1 text-[11px] text-neutral-700 hover:bg-neutral-100"
+          >
+            <option value="" disabled>
+              Pull from trade…
+            </option>
+            {tradeOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={4}
+        className="block w-full rounded-md border border-neutral-200 p-3 font-mono text-sm"
+      />
+      {validCount > 0 && (
+        <p className="mt-1 text-[11px] text-neutral-500">
+          {validCount} valid
+          {invalidCount > 0 && ` · ${invalidCount} invalid`}
+        </p>
       )}
     </div>
   )
