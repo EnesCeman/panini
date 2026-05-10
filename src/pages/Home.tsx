@@ -1,14 +1,18 @@
-import { ChevronRight } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowDownRight, ArrowUpRight, ChevronRight } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { GroupSection } from '@/components/GroupSection'
 import { ProgressBar } from '@/components/ProgressBar'
 import { SearchBar } from '@/components/SearchBar'
-import { useTotals } from '@/lib/state'
+import { useStickersMap, useTotals, type Sticker } from '@/lib/state'
+import { useTrades, type Trade } from '@/lib/trades'
 import { cn } from '@/lib/utils'
 
 export function Home() {
   const { have, missing, doubles, total } = useTotals()
+  const stickers = useStickersMap()
+  const trades = useTrades()
+  const projected = useProjectedTotals(stickers, trades, total)
   const pct = total > 0 ? Math.round((have / total) * 100) : 0
   const [query, setQuery] = useState('')
 
@@ -30,9 +34,28 @@ export function Home() {
       </section>
 
       <section className="grid grid-cols-3 gap-2">
-        <StatTile label="Have" value={have} accent="text-emerald-600" />
-        <StatTile label="Missing" value={missing} accent="text-neutral-700" to="/missing" />
-        <StatTile label="Doubles" value={doubles} accent="text-amber-600" to="/doubles" />
+        <StatTile
+          label="Have"
+          value={have}
+          projected={projected.have}
+          accent="text-emerald-600"
+          upIsGood
+        />
+        <StatTile
+          label="Missing"
+          value={missing}
+          projected={projected.missing}
+          accent="text-neutral-700"
+          to="/missing"
+          downIsGood
+        />
+        <StatTile
+          label="Doubles"
+          value={doubles}
+          projected={projected.doubles}
+          accent="text-amber-600"
+          to="/doubles"
+        />
       </section>
 
       <SearchBar value={query} onChange={setQuery} placeholder="Search by team name or code" />
@@ -42,17 +65,67 @@ export function Home() {
   )
 }
 
+// Project have/missing/doubles assuming every locked-pending trade completes.
+function useProjectedTotals(
+  stickers: Map<string, Sticker>,
+  trades: Map<string, Trade>,
+  total: number,
+) {
+  return useMemo(() => {
+    const delta = new Map<string, number>()
+    for (const t of trades.values()) {
+      if (!t.locked || t.status !== 'pending') continue
+      for (const c of t.get) delta.set(c, (delta.get(c) ?? 0) + 1)
+      for (const c of t.give) delta.set(c, (delta.get(c) ?? 0) - 1)
+    }
+
+    let have = 0
+    let doubles = 0
+    const seen = new Set<string>()
+    for (const [code, s] of stickers) {
+      seen.add(code)
+      const next = Math.max(0, s.count + (delta.get(code) ?? 0))
+      if (next >= 1) have += 1
+      if (next >= 2) doubles += next - 1
+    }
+    for (const [code, d] of delta) {
+      if (seen.has(code)) continue
+      const next = Math.max(0, d)
+      if (next >= 1) have += 1
+      if (next >= 2) doubles += next - 1
+    }
+    have = Math.min(have, total)
+    return { have, doubles, missing: Math.max(0, total - have) }
+  }, [stickers, trades, total])
+}
+
 function StatTile({
   label,
   value,
+  projected,
   accent,
+  upIsGood,
+  downIsGood,
   to,
 }: {
   label: string
   value: number
+  projected: number
   accent: string
+  upIsGood?: boolean
+  downIsGood?: boolean
   to?: string
 }) {
+  const showProjection = projected !== value
+  const delta = projected - value
+  const isGood = (upIsGood && delta > 0) || (downIsGood && delta < 0)
+  const isBad = (upIsGood && delta < 0) || (downIsGood && delta > 0)
+  const projectionTone = isGood
+    ? 'text-emerald-700'
+    : isBad
+      ? 'text-rose-700'
+      : 'text-neutral-600'
+
   const inner = (
     <>
       {to && (
@@ -63,6 +136,17 @@ function StatTile({
       )}
       <div className={cn('text-2xl font-bold tabular-nums', accent)}>{value}</div>
       <div className="text-[11px] uppercase tracking-wide text-neutral-500">{label}</div>
+      {showProjection && (
+        <div className="mt-1.5 flex items-center justify-center gap-0.5 border-t border-neutral-100 pt-1 text-[10px] tabular-nums">
+          {delta > 0 ? (
+            <ArrowUpRight className={cn('h-2.5 w-2.5', projectionTone)} strokeWidth={2.5} />
+          ) : (
+            <ArrowDownRight className={cn('h-2.5 w-2.5', projectionTone)} strokeWidth={2.5} />
+          )}
+          <span className={cn('font-semibold', projectionTone)}>{projected}</span>
+          <span className="text-neutral-400">pending</span>
+        </div>
+      )}
     </>
   )
   const className = cn(
