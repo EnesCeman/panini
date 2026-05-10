@@ -201,13 +201,17 @@ export function TradeDetail() {
         className="sticky top-0 z-20 flex items-center gap-2 border-b border-neutral-200 bg-neutral-50 px-3 pb-3"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >
-        <Link
-          to="/trading"
+        <button
+          type="button"
+          onClick={() => {
+            if (window.history.length > 1) navigate(-1)
+            else navigate('/trading')
+          }}
           className="rounded-full p-1.5 text-neutral-600 hover:bg-neutral-200"
           aria-label="Back to Trading"
         >
           <ArrowLeft className="h-5 w-5" />
-        </Link>
+        </button>
         <Input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
