@@ -223,8 +223,6 @@ export function TradeDetail() {
     )
   }
 
-  const giveRows = buildRows(trade.give, stickers)
-
   return (
     <div className="pb-24">
       <header
@@ -313,13 +311,57 @@ export function TradeDetail() {
           rows={3}
           className="block w-full rounded-md border border-neutral-200 p-2.5 font-mono text-sm"
         />
-        {giveRows.length > 0 && (
-          <RowTable
-            rows={giveRows}
-            tone="rose"
-            onRemove={(code) => void removeCode('give', code)}
-          />
-        )}
+        {trade.give.length > 0 && (() => {
+          const annotated = trade.give.map((code) => {
+            const [teamCode, numStr] = code.split('-')
+            const team = TEAM_BY_CODE.get(teamCode)
+            const num = parseInt(numStr, 10)
+            const sticker = stickers.get(code)
+            const userName = sticker?.name ?? null
+            const album = albumPlayerName(code)
+            const name = userName ?? album ?? resolvePlayerLabel(code, null) ?? code
+            return {
+              code,
+              teamName: team?.name ?? teamCode,
+              num,
+              name,
+              count: sticker?.count ?? 0,
+            }
+          })
+          const dontHave = annotated.filter((r) => r.count === 0)
+          const available = annotated.filter((r) => r.count > 0)
+          return (
+            <>
+              {dontHave.length > 0 && (
+                <AnnotatedTable
+                  title={`Don't have — ${dontHave.length} (possible mistake)`}
+                  tone="rose"
+                  rows={dontHave}
+                  onRemove={(code) => void removeCode('give', code)}
+                />
+              )}
+              {available.length > 0 && (
+                <AnnotatedTable
+                  title={`Available — ${available.length}`}
+                  tone="emerald"
+                  rows={available}
+                  onRemove={(code) => void removeCode('give', code)}
+                />
+              )}
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-700">
+                <span>
+                  Listed <strong>{trade.give.length}</strong>
+                </span>
+                <span className="text-emerald-700">
+                  · <strong>{available.length}</strong> available
+                </span>
+                <span className="text-rose-700">
+                  · <strong>{dontHave.length}</strong> don't have
+                </span>
+              </div>
+            </>
+          )
+        })()}
       </Section>
 
       <Section title="I'm getting" count={trade.get.length}>
@@ -554,45 +596,6 @@ function buildRows(codes: string[], stickers: Map<string, { name: string | null 
   })
 }
 
-function RowTable({
-  rows,
-  tone,
-  onRemove,
-}: {
-  rows: Row[]
-  tone: 'emerald' | 'rose'
-  onRemove?: (code: string) => void
-}) {
-  return (
-    <ul className="mt-2 overflow-hidden rounded-lg border border-neutral-200 bg-white">
-      {rows.map((r, idx) => (
-        <li
-          key={`${r.code}-${idx}`}
-          className={idx !== rows.length - 1 ? 'border-b border-neutral-100' : undefined}
-        >
-          <div className="flex items-center gap-3 px-3 py-2">
-            <Check
-              className={cn(
-                'h-3.5 w-3.5 shrink-0',
-                tone === 'emerald' ? 'text-emerald-600' : 'text-rose-600',
-              )}
-            />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-mono font-semibold text-neutral-900">
-                {r.code}
-              </div>
-              <div className="truncate text-[11px] text-neutral-600">
-                {r.name} · {r.teamName}
-              </div>
-            </div>
-            {onRemove && <RemoveButton code={r.code} onRemove={onRemove} />}
-          </div>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
 function RemoveButton({
   code,
   onRemove,
@@ -622,7 +625,7 @@ function AnnotatedTable({
   onRemove,
 }: {
   title: string
-  tone: 'emerald' | 'amber'
+  tone: 'emerald' | 'amber' | 'rose'
   rows: AnnotatedRow[]
   showCount?: boolean
   onRemove?: (code: string) => void
@@ -631,12 +634,21 @@ function AnnotatedTable({
   const headerCls =
     tone === 'amber'
       ? 'bg-amber-50 text-amber-800 border-amber-200'
-      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+      : tone === 'rose'
+        ? 'bg-rose-50 text-rose-800 border-rose-200'
+        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
   const buttonHoverCls =
     tone === 'amber'
       ? 'hover:bg-amber-100 active:bg-amber-200'
-      : 'hover:bg-emerald-100 active:bg-emerald-200'
-  const iconCls = tone === 'amber' ? 'text-amber-600' : 'text-emerald-600'
+      : tone === 'rose'
+        ? 'hover:bg-rose-100 active:bg-rose-200'
+        : 'hover:bg-emerald-100 active:bg-emerald-200'
+  const iconCls =
+    tone === 'amber'
+      ? 'text-amber-600'
+      : tone === 'rose'
+        ? 'text-rose-600'
+        : 'text-emerald-600'
 
   async function handleCopy() {
     try {
