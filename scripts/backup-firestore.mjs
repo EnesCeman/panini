@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// Dumps stickers + proposals + admins to backups/<timestamp>.json
+// Dumps stickers + trades + submissions + meta to backups/<timestamp>.json
 // Reads .env.local for VITE_FIREBASE_* config.
-// Run: node scripts/backup-firestore.mjs
+// Run: node scripts/backup-firestore.mjs [label]
+//   label is appended as --<label> in the filename, slug-friendly chars only.
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -49,13 +50,21 @@ function serializeValue(v) {
 }
 
 async function dumpCollection(name) {
-  const snap = await getDocs(collection(db, name))
-  const docs = {}
-  snap.forEach((d) => {
-    docs[d.id] = serializeValue(d.data())
-  })
-  console.log(`  ${name}: ${snap.size} docs`)
-  return docs
+  try {
+    const snap = await getDocs(collection(db, name))
+    const docs = {}
+    snap.forEach((d) => {
+      docs[d.id] = serializeValue(d.data())
+    })
+    console.log(`  ${name}: ${snap.size} docs`)
+    return docs
+  } catch (err) {
+    if (err && err.code === 'permission-denied') {
+      console.log(`  ${name}: SKIPPED (permission-denied; admin-only collection)`)
+      return null
+    }
+    throw err
+  }
 }
 
 async function main() {
@@ -65,14 +74,22 @@ async function main() {
     takenAt: new Date().toISOString(),
     collections: {
       stickers: await dumpCollection('stickers'),
-      proposals: await dumpCollection('proposals'),
+      trades: await dumpCollection('trades'),
+      submissions: await dumpCollection('submissions'),
+      meta: await dumpCollection('meta'),
     },
   }
 
+  const rawLabel = process.argv[2] ?? ''
+  const label = rawLabel
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
   const outDir = join(root, 'backups')
   mkdirSync(outDir, { recursive: true })
-  const outPath = join(outDir, `firestore-${stamp}.json`)
+  const suffix = label ? `--${label}` : ''
+  const outPath = join(outDir, `firestore-${stamp}${suffix}.json`)
   writeFileSync(outPath, JSON.stringify(data, null, 2), 'utf8')
   console.log(`Saved → ${outPath}`)
   process.exit(0)
