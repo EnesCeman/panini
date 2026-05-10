@@ -9,9 +9,9 @@ const T = {
     'public.title': 'Razmjena sličica',
     'public.subtitle':
       'Klikni sve što imaš viška i sve što ti fali, pa pošalji. Meni stiže lista i javim ti se na kontakt koji ostaviš — a ti je možeš i preuzeti za sebe.',
-    'public.tab.have': 'Meni fale ({count})',
+    'public.tab.have': 'Meni nedostaju ({count})',
     'public.tab.want': 'Moji duplikati ({count})',
-    'public.have.heading': 'Ovo su sličice koje meni fale',
+    'public.have.heading': 'Ovo su sličice koje meni nedostaju',
     'public.have.sub': 'Označi one koje ti imaš viška, javim ti se.',
     'public.want.heading': 'Ovo su moji duplikati',
     'public.want.sub': 'Označi one koje tebi trebaju.',
