@@ -1,4 +1,4 @@
-import { ChevronRight, Lock, Plus } from 'lucide-react'
+import { ChevronRight, ClipboardCheck, Copy, Lock, Phone, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -145,12 +145,18 @@ function TradeRow({ trade }: { trade: Trade }) {
             type="button"
             onClick={handleCopyContact}
             className={cn(
-              'block max-w-full truncate text-left text-[11px] hover:text-emerald-700',
+              'inline-flex max-w-full items-center gap-1 text-left text-[11px] hover:text-emerald-700',
               copied ? 'text-emerald-700' : 'text-neutral-600',
             )}
             title="Click to copy"
           >
-            {copied ? 'Copied!' : trade.contact}
+            <Phone className="h-3 w-3 shrink-0" />
+            <span className="truncate">{copied ? 'Copied!' : trade.contact}</span>
+            {copied ? (
+              <ClipboardCheck className="h-3 w-3 shrink-0" />
+            ) : (
+              <Copy className="h-3 w-3 shrink-0 opacity-60" />
+            )}
           </button>
         )}
         <div className="truncate text-[11px] text-neutral-500">
