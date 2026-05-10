@@ -36,7 +36,6 @@ export function TradeDetail() {
     return () => unsub()
   }, [])
 
-  const [name, setName] = useState('')
   const [subject, setSubject] = useState('')
   const [giveText, setGiveText] = useState('')
   const [getText, setGetText] = useState('')
@@ -49,7 +48,6 @@ export function TradeDetail() {
   useEffect(() => {
     if (!trade) return
     if (lastIdRef.current === trade.id) return
-    setName(trade.name)
     setSubject(trade.subject)
     setGiveText(formatGroupedCodes(trade.give))
     setGetText(formatGroupedCodes(trade.get))
@@ -61,19 +59,6 @@ export function TradeDetail() {
     setSavedFlash(true)
     if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current)
     flashTimerRef.current = window.setTimeout(() => setSavedFlash(false), 1500)
-  }
-
-  async function saveName() {
-    if (!trade) return
-    const next = name.trim() || 'New trade'
-    if (next === trade.name) return
-    setName(next)
-    try {
-      await updateTrade(trade.id, { name: next })
-      flashSaved()
-    } catch (e) {
-      console.error(e)
-    }
   }
 
   async function saveSubject() {
@@ -154,7 +139,7 @@ export function TradeDetail() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `trade-${slug(trade.name)}.csv`
+    a.download = `trade-${slug(trade.subject)}.csv`
     document.body.appendChild(a)
     a.click()
     a.remove()
@@ -176,42 +161,32 @@ export function TradeDetail() {
   return (
     <div className="pb-24">
       <header
-        className="sticky top-0 z-20 border-b border-neutral-200 bg-neutral-50 px-3 pb-3"
+        className="sticky top-0 z-20 flex items-center gap-2 border-b border-neutral-200 bg-neutral-50 px-3 pb-3"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >
-        <div className="flex items-center gap-2">
-          <Link
-            to="/trading"
-            className="rounded-full p-1.5 text-neutral-600 hover:bg-neutral-200"
-            aria-label="Back to Trading"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={() => void saveName()}
-            maxLength={120}
-            className="flex-1 border-0 bg-transparent text-base font-semibold shadow-none focus-visible:bg-white"
-            placeholder="Trade name"
-          />
-          <span
-            className={cn(
-              'text-[10px] font-medium uppercase tracking-wider transition-opacity',
-              savedFlash ? 'text-emerald-600 opacity-100' : 'opacity-0',
-            )}
-          >
-            Saved
-          </span>
-        </div>
+        <Link
+          to="/trading"
+          className="rounded-full p-1.5 text-neutral-600 hover:bg-neutral-200"
+          aria-label="Back to Trading"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
         <Input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           onBlur={() => void saveSubject()}
           maxLength={120}
-          placeholder="Subject — with whom or what about (e.g. Marko on Facebook)"
-          className="ml-9 mt-1 h-8 border-0 bg-transparent text-xs text-neutral-600 shadow-none placeholder:text-neutral-400 focus-visible:bg-white"
+          placeholder="Subject — with whom or what (e.g. Marko on Facebook)"
+          className="flex-1 border-0 bg-transparent text-base font-semibold shadow-none focus-visible:bg-white"
         />
+        <span
+          className={cn(
+            'text-[10px] font-medium uppercase tracking-wider transition-opacity',
+            savedFlash ? 'text-emerald-600 opacity-100' : 'opacity-0',
+          )}
+        >
+          Saved
+        </span>
       </header>
 
       <div className="px-4 pt-4">

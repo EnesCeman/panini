@@ -43,7 +43,7 @@ export function Trading() {
   async function handleCreate() {
     setCreating(true)
     try {
-      const id = await createTrade('New trade')
+      const id = await createTrade()
       navigate(`/trading/${id}`)
     } catch (e) {
       console.error(e)
@@ -105,10 +105,14 @@ function TradeRow({ trade }: { trade: Trade }) {
       className="flex items-center gap-3 overflow-hidden rounded-lg border border-neutral-200 bg-white px-3 py-2.5 active:bg-neutral-50"
     >
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-neutral-900">{trade.name}</div>
-        {trade.subject.length > 0 && (
-          <div className="truncate text-[11px] text-neutral-600">{trade.subject}</div>
-        )}
+        <div
+          className={cn(
+            'truncate text-sm font-semibold',
+            trade.subject.length > 0 ? 'text-neutral-900' : 'text-neutral-400',
+          )}
+        >
+          {trade.subject.length > 0 ? trade.subject : 'Untitled trade'}
+        </div>
         <div className="truncate text-[11px] text-neutral-500">
           Giving {trade.give.length} · Getting {trade.get.length} · {updated}
         </div>

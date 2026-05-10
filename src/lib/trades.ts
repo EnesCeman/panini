@@ -15,7 +15,6 @@ export type TradeStatus = 'pending' | 'completed' | 'cancelled'
 
 export type Trade = {
   id: string
-  name: string
   subject: string
   give: string[]
   get: string[]
@@ -46,11 +45,12 @@ export function subscribeTrades(): () => void {
     (snap) => {
       const map = new Map<string, Trade>()
       snap.forEach((d) => {
-        const data = d.data() as Partial<Omit<Trade, 'id'>>
+        const data = d.data() as Partial<Trade> & { name?: string }
         map.set(d.id, {
           id: d.id,
-          name: data.name ?? '',
-          subject: data.subject ?? '',
+          // Older trades persisted only `name`; treat it as the subject if no
+          // explicit subject has been written yet.
+          subject: data.subject ?? data.name ?? '',
           give: data.give ?? [],
           get: data.get ?? [],
           notes: data.notes ?? '',
@@ -75,9 +75,8 @@ export function useTrade(id: string | undefined): Trade | undefined {
   return useTradesStore((s) => (id ? s.trades.get(id) : undefined))
 }
 
-export async function createTrade(name: string): Promise<string> {
+export async function createTrade(): Promise<string> {
   const ref = await addDoc(collection(db, 'trades'), {
-    name: name.trim() || 'New trade',
     subject: '',
     give: [],
     get: [],
@@ -89,7 +88,7 @@ export async function createTrade(name: string): Promise<string> {
   return ref.id
 }
 
-type TradePatch = Partial<Pick<Trade, 'name' | 'subject' | 'give' | 'get' | 'notes' | 'status'>>
+type TradePatch = Partial<Pick<Trade, 'subject' | 'give' | 'get' | 'notes' | 'status'>>
 
 export async function updateTrade(id: string, patch: TradePatch): Promise<void> {
   await updateDoc(doc(db, 'trades', id), {
