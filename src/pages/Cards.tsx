@@ -1,4 +1,4 @@
-import { ArrowUpDown, ClipboardList, GitCompare } from 'lucide-react'
+import { ArrowUpDown, ClipboardList, GitCompare, Inbox, Lock } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { BulkAdjuster } from '@/components/BulkAdjuster'
 import { CodeChecker } from '@/components/CodeChecker'
@@ -10,9 +10,11 @@ import { SearchModeToggle, type SearchMode } from '@/components/SearchModeToggle
 import { StickerSheet } from '@/components/StickerSheet'
 import { TEAMS, stickerKind, type Team } from '@/data/teams'
 import { ALBUM_PLAYER_NAMES } from '@/data/playerNames'
+import { useAdminLocks, type LockedTradeRef } from '@/lib/locks'
 import { normalizeForSearch } from '@/lib/normalize'
 import { cn } from '@/lib/utils'
 import { useStickersMap } from '@/lib/state'
+import { useTrades } from '@/lib/trades'
 
 type CardKind = 'badge' | 'team_photo' | 'player'
 
@@ -46,6 +48,8 @@ function deriveCardName(team: Team, num: number, code: string, userName: string 
 
 export function Cards() {
   const stickers = useStickersMap()
+  const trades = useTrades()
+  const locks = useAdminLocks(trades)
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
   const [openCode, setOpenCode] = useState<string | null>(null)
@@ -196,7 +200,7 @@ export function Cards() {
                     {c.name}
                   </div>
                   <div className="truncate text-[11px] text-neutral-500">
-                    {c.team.name}
+                    {c.team.name}{' '}
                     {c.source !== 'none' && ` · ${c.code}`}
                     {c.kind === 'badge' && ' · badge'}
                     {c.kind === 'team_photo' && ' · team photo'}
@@ -204,6 +208,10 @@ export function Cards() {
                     {c.source === 'none' && ' · no name yet'}
                   </div>
                 </div>
+                <LockChip
+                  outgoing={locks.outgoing.get(c.code)}
+                  incoming={locks.incoming.get(c.code)}
+                />
                 <CountBadge count={c.count} />
               </button>
             </li>
@@ -217,6 +225,42 @@ export function Cards() {
       {overlapOpen && <OverlapChecker onClose={() => setOverlapOpen(false)} />}
     </div>
   )
+}
+
+function LockChip({
+  outgoing,
+  incoming,
+}: {
+  outgoing?: LockedTradeRef[]
+  incoming?: LockedTradeRef[]
+}) {
+  if (incoming && incoming.length > 0) {
+    const subj = incoming[0].subject
+    const more = incoming.length > 1 ? ` +${incoming.length - 1}` : ''
+    return (
+      <span
+        className="mr-2 inline-flex max-w-[120px] items-center gap-1 truncate rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800"
+        title={incoming.map((r) => r.subject).join(', ')}
+      >
+        <Inbox className="h-3 w-3 shrink-0" />
+        <span className="truncate">{subj}{more}</span>
+      </span>
+    )
+  }
+  if (outgoing && outgoing.length > 0) {
+    const subj = outgoing[0].subject
+    const more = outgoing.length > 1 ? ` +${outgoing.length - 1}` : ''
+    return (
+      <span
+        className="mr-2 inline-flex max-w-[120px] items-center gap-1 truncate rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+        title={outgoing.map((r) => r.subject).join(', ')}
+      >
+        <Lock className="h-3 w-3 shrink-0" />
+        <span className="truncate">{subj}{more}</span>
+      </span>
+    )
+  }
+  return null
 }
 
 function CountBadge({ count }: { count: number }) {
