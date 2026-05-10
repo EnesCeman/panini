@@ -1,9 +1,20 @@
-import { ArrowLeft, Check, ClipboardCheck, Copy, Download, Trash2, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import {
+  ArrowLeft,
+  Check,
+  ClipboardCheck,
+  Copy,
+  Download,
+  Lock,
+  Trash2,
+  Unlock,
+  X,
+} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { TEAMS } from '@/data/teams'
+import { findGiveOverlaps } from '@/lib/locks'
 import { parseCodes } from '@/lib/parseCodes'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
@@ -13,6 +24,7 @@ import {
   subscribeTrades,
   updateTrade,
   useTrade,
+  useTrades,
   type TradeStatus,
 } from '@/lib/trades'
 import { cn } from '@/lib/utils'
@@ -28,6 +40,7 @@ const STATUS_OPTIONS: { value: TradeStatus; label: string; activeCls: string }[]
 export function TradeDetail() {
   const { id } = useParams<{ id: string }>()
   const trade = useTrade(id)
+  const allTrades = useTrades()
   const stickers = useStickersMap()
   const navigate = useNavigate()
 
@@ -117,6 +130,16 @@ export function TradeDetail() {
     if (!trade || trade.status === s) return
     try {
       await updateTrade(trade.id, { status: s })
+      flashSaved()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  async function toggleLock() {
+    if (!trade) return
+    try {
+      await updateTrade(trade.id, { locked: !trade.locked })
       flashSaved()
     } catch (e) {
       console.error(e)
@@ -222,6 +245,8 @@ export function TradeDetail() {
           ))}
         </div>
       </div>
+
+      <LockSection trade={trade} allTrades={allTrades} onToggle={() => void toggleLock()} />
 
       <Section title="I'm giving" count={trade.give.length}>
         <textarea
@@ -338,6 +363,98 @@ export function TradeDetail() {
           <Trash2 className="h-4 w-4" />
           Delete
         </Button>
+      </div>
+    </div>
+  )
+}
+
+function LockSection({
+  trade,
+  allTrades,
+  onToggle,
+}: {
+  trade: ReturnType<typeof useTrade>
+  allTrades: ReturnType<typeof useTrades>
+  onToggle: () => void
+}) {
+  const overlaps = useMemo(() => {
+    if (!trade) return []
+    if (trade.locked) return []
+    return findGiveOverlaps(trade.id, trade.give, allTrades.values())
+  }, [trade, allTrades])
+
+  if (!trade) return null
+
+  const isPending = trade.status === 'pending'
+  const blocked = overlaps.length > 0
+
+  return (
+    <div className="mt-3 px-4">
+      <div
+        className={cn(
+          'rounded-md border px-3 py-2.5',
+          trade.locked
+            ? 'border-amber-200 bg-amber-50'
+            : 'border-neutral-200 bg-white',
+        )}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-neutral-900">
+              {trade.locked ? (
+                <Lock className="h-3.5 w-3.5 text-amber-600" />
+              ) : (
+                <Unlock className="h-3.5 w-3.5 text-neutral-400" />
+              )}
+              Lock cards
+            </h3>
+            <p className="mt-0.5 text-[11px] text-neutral-600">
+              {trade.locked
+                ? 'These codes are reserved across your missing, spares, and the public swap page until the trade closes.'
+                : isPending
+                  ? 'Reserve these codes so visitors can’t request them and other trades can’t double-promise them.'
+                  : 'Lock only applies while the trade is Pending.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onToggle}
+            disabled={!isPending || (!trade.locked && blocked)}
+            className={cn(
+              'h-8 shrink-0 rounded-full px-3 text-xs font-semibold',
+              trade.locked
+                ? 'bg-amber-500 text-white hover:bg-amber-600'
+                : !isPending || blocked
+                  ? 'cursor-not-allowed bg-neutral-200 text-neutral-400'
+                  : 'bg-neutral-900 text-white hover:bg-neutral-800',
+            )}
+          >
+            {trade.locked ? 'Unlock' : 'Lock'}
+          </button>
+        </div>
+        {!trade.locked && blocked && (
+          <div className="mt-2 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] text-rose-800">
+            <div className="font-semibold">
+              Can&rsquo;t lock — these codes are already locked in another trade:
+            </div>
+            <ul className="mt-1 space-y-0.5">
+              {overlaps.map((o) => (
+                <li key={`${o.code}-${o.otherTrade.id}`}>
+                  <strong className="font-mono">{o.code}</strong> in{' '}
+                  <Link
+                    to={`/trading/${o.otherTrade.id}`}
+                    className="underline hover:text-rose-900"
+                  >
+                    {o.otherTrade.subject}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 italic">
+              Remove these from one side or unlock the other trade first.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -3,9 +3,11 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { TabBar } from '@/components/TabBar'
 import { Toaster } from '@/components/Toaster'
 import { useIsAdmin } from '@/lib/auth'
+import { subscribePublicLocks, syncLocksToFirestore } from '@/lib/locks'
 import { PublicLocaleProvider } from '@/lib/publicI18n'
 import { subscribeStickers } from '@/lib/state'
 import { subscribeSubmissions } from '@/lib/submissions'
+import { subscribeTrades, useTrades } from '@/lib/trades'
 import { Cards } from '@/pages/Cards'
 import { Doubles } from '@/pages/Doubles'
 import { Home } from '@/pages/Home'
@@ -40,6 +42,26 @@ export default function App() {
     const unsub = subscribeSubmissions()
     return () => unsub()
   }, [isAdmin])
+
+  // Admin needs the trades collection in scope so the lock-sync
+  // effect (below) can recompute meta/locks; non-admins read meta/locks
+  // directly via subscribePublicLocks for the visitor flow.
+  useEffect(() => {
+    if (!isAdmin) return
+    const unsub = subscribeTrades()
+    return () => unsub()
+  }, [isAdmin])
+
+  useEffect(() => {
+    const unsub = subscribePublicLocks()
+    return () => unsub()
+  }, [])
+
+  const trades = useTrades()
+  useEffect(() => {
+    if (!isAdmin) return
+    void syncLocksToFirestore(trades.values())
+  }, [isAdmin, trades])
 
   if (adminCheck.status === 'loading') {
     return (

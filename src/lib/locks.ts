@@ -1,0 +1,155 @@
+import { doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
+import { useMemo } from 'react'
+import { create } from 'zustand'
+import { db } from './firebase'
+import type { Trade } from './trades'
+
+export type LockedTradeRef = { id: string; subject: string }
+
+export type AdminLocks = {
+  outgoing: Map<string, LockedTradeRef[]>
+  incoming: Map<string, LockedTradeRef[]>
+}
+
+export type PublicLocks = {
+  outgoing: Map<string, number>
+  incoming: Map<string, number>
+}
+
+const EMPTY_PUBLIC_LOCKS: PublicLocks = {
+  outgoing: new Map(),
+  incoming: new Map(),
+}
+
+// A trade only contributes to the lock state when it's both pending AND
+// the user has explicitly toggled the lock on. Status leaving pending
+// auto-releases the lock effect (the trade's `locked` flag stays as-is so
+// flipping back to pending re-applies it).
+function isActive(t: Trade): boolean {
+  return t.locked && t.status === 'pending'
+}
+
+export function computeAdminLocks(trades: Iterable<Trade>): AdminLocks {
+  const outgoing = new Map<string, LockedTradeRef[]>()
+  const incoming = new Map<string, LockedTradeRef[]>()
+  for (const t of trades) {
+    if (!isActive(t)) continue
+    const ref: LockedTradeRef = {
+      id: t.id,
+      subject: t.subject.trim().length > 0 ? t.subject : 'Untitled trade',
+    }
+    for (const code of t.give) {
+      const list = outgoing.get(code) ?? []
+      list.push(ref)
+      outgoing.set(code, list)
+    }
+    for (const code of t.get) {
+      const list = incoming.get(code) ?? []
+      list.push(ref)
+      incoming.set(code, list)
+    }
+  }
+  return { outgoing, incoming }
+}
+
+export function useAdminLocks(trades: Map<string, Trade>): AdminLocks {
+  return useMemo(() => computeAdminLocks(trades.values()), [trades])
+}
+
+// Find this trade's give-overlap against other locked-pending trades.
+// Used to block locking when the same code is already promised elsewhere.
+export type GiveOverlap = { code: string; otherTrade: LockedTradeRef }
+
+export function findGiveOverlaps(
+  thisTradeId: string,
+  thisGive: string[],
+  trades: Iterable<Trade>,
+): GiveOverlap[] {
+  const overlaps: GiveOverlap[] = []
+  const thisGiveSet = new Set(thisGive)
+  for (const t of trades) {
+    if (t.id === thisTradeId) continue
+    if (!isActive(t)) continue
+    const ref: LockedTradeRef = {
+      id: t.id,
+      subject: t.subject.trim().length > 0 ? t.subject : 'Untitled trade',
+    }
+    for (const code of t.give) {
+      if (thisGiveSet.has(code)) {
+        overlaps.push({ code, otherTrade: ref })
+      }
+    }
+  }
+  return overlaps
+}
+
+// Public locks: derived snapshot in meta/locks. Admin client writes it
+// whenever trades change; visitor client only reads.
+
+type State = { locks: PublicLocks; ready: boolean }
+type Actions = { setLocks: (l: PublicLocks) => void }
+
+const usePublicLocksStore = create<State & Actions>((set) => ({
+  locks: EMPTY_PUBLIC_LOCKS,
+  ready: false,
+  setLocks: (locks) => set({ locks, ready: true }),
+}))
+
+export function subscribePublicLocks(): () => void {
+  return onSnapshot(
+    doc(db, 'meta', 'locks'),
+    (snap) => {
+      const data = snap.data() as
+        | { outgoing?: Record<string, number>; incoming?: Record<string, number> }
+        | undefined
+      const outgoing = new Map<string, number>()
+      const incoming = new Map<string, number>()
+      if (data?.outgoing) {
+        for (const [code, n] of Object.entries(data.outgoing)) {
+          if (typeof n === 'number' && n > 0) outgoing.set(code, n)
+        }
+      }
+      if (data?.incoming) {
+        for (const [code, n] of Object.entries(data.incoming)) {
+          if (typeof n === 'number' && n > 0) incoming.set(code, n)
+        }
+      }
+      usePublicLocksStore.getState().setLocks({ outgoing, incoming })
+    },
+    (err) => {
+      console.error('Public locks snapshot error', err)
+    },
+  )
+}
+
+export function usePublicLocks(): PublicLocks {
+  return usePublicLocksStore((s) => s.locks)
+}
+
+let lastSyncedKey = ''
+
+// Recompute meta/locks from the current trades snapshot. Skips the write
+// when the resulting payload hasn't changed, since useEffect will fire
+// for any trade edit.
+export async function syncLocksToFirestore(trades: Iterable<Trade>): Promise<void> {
+  const outgoing: Record<string, number> = {}
+  const incoming: Record<string, number> = {}
+  for (const t of trades) {
+    if (!isActive(t)) continue
+    for (const code of t.give) outgoing[code] = (outgoing[code] ?? 0) + 1
+    for (const code of t.get) incoming[code] = (incoming[code] ?? 0) + 1
+  }
+  const key = JSON.stringify({ outgoing, incoming })
+  if (key === lastSyncedKey) return
+  lastSyncedKey = key
+  try {
+    await setDoc(doc(db, 'meta', 'locks'), {
+      outgoing,
+      incoming,
+      updatedAt: serverTimestamp(),
+    })
+  } catch (e) {
+    console.error('syncLocksToFirestore failed', e)
+    lastSyncedKey = ''
+  }
+}

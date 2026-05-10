@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Inbox } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CodeSearchInput } from '@/components/CodeSearchInput'
@@ -8,15 +8,19 @@ import { SearchBar } from '@/components/SearchBar'
 import { SearchModeToggle, type SearchMode } from '@/components/SearchModeToggle'
 import { StickerSheet } from '@/components/StickerSheet'
 import { TEAMS, stickerKind } from '@/data/teams'
+import { useAdminLocks } from '@/lib/locks'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
+import { useTrades } from '@/lib/trades'
 import { cn } from '@/lib/utils'
 
 type MissingItem = { code: string; teamCode: string; num: number; name: string | null }
 
 export function Missing() {
   const stickers = useStickersMap()
+  const trades = useTrades()
+  const locks = useAdminLocks(trades)
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
   const [openCode, setOpenCode] = useState<string | null>(null)
@@ -148,6 +152,21 @@ export function Missing() {
                       <span className="min-w-0 flex-1 truncate text-sm text-neutral-900">
                         {labelFor(s.code, s.num, s.name)}
                       </span>
+                      {(() => {
+                        const inc = locks.incoming.get(s.code)
+                        if (!inc || inc.length === 0) return null
+                        const subj = inc[0].subject
+                        const more = inc.length > 1 ? ` +${inc.length - 1}` : ''
+                        return (
+                          <span
+                            className="mr-2 inline-flex max-w-[140px] items-center gap-1 truncate rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800"
+                            title={inc.map((r) => r.subject).join(', ')}
+                          >
+                            <Inbox className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{subj}{more}</span>
+                          </span>
+                        )
+                      })()}
                       <span className="text-xs tabular-nums text-neutral-400">{s.code}</span>
                     </button>
                   </li>

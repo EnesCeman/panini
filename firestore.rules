@@ -20,6 +20,15 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Aggregated, non-sensitive views the public surface needs.
+    // Admin client recomputes meta/locks whenever trades change so
+    // visitors can see which codes are reserved by pending trades
+    // without exposing the full trades collection.
+    match /meta/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /submissions/{id} {
       allow create: if
         request.resource.data.name is string

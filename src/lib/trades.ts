@@ -20,6 +20,7 @@ export type Trade = {
   get: string[]
   notes: string
   status: TradeStatus
+  locked: boolean
   createdAt: Timestamp | null
   updatedAt: Timestamp | null
 }
@@ -55,6 +56,7 @@ export function subscribeTrades(): () => void {
           get: data.get ?? [],
           notes: data.notes ?? '',
           status: data.status ?? 'pending',
+          locked: data.locked ?? false,
           createdAt: data.createdAt ?? null,
           updatedAt: data.updatedAt ?? null,
         })
@@ -82,13 +84,16 @@ export async function createTrade(): Promise<string> {
     get: [],
     notes: '',
     status: 'pending' as TradeStatus,
+    locked: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
   return ref.id
 }
 
-type TradePatch = Partial<Pick<Trade, 'subject' | 'give' | 'get' | 'notes' | 'status'>>
+type TradePatch = Partial<
+  Pick<Trade, 'subject' | 'give' | 'get' | 'notes' | 'status' | 'locked'>
+>
 
 export async function updateTrade(id: string, patch: TradePatch): Promise<void> {
   await updateDoc(doc(db, 'trades', id), {

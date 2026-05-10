@@ -9,6 +9,7 @@ import { SearchBar } from '@/components/SearchBar'
 import { SearchModeToggle, type SearchMode } from '@/components/SearchModeToggle'
 import { Button } from '@/components/ui/button'
 import { TEAMS, stickerKind, type Team } from '@/data/teams'
+import { usePublicLocks } from '@/lib/locks'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { usePublicT } from '@/lib/publicI18n'
@@ -28,6 +29,7 @@ type Item = {
 export function PublicLanding() {
   const t = usePublicT()
   const stickers = useStickersMap()
+  const locks = usePublicLocks()
   const [tab, setTab] = useState<Tab>('want')
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
@@ -42,13 +44,16 @@ export function PublicLanding() {
       for (let i = 1; i <= 20; i++) {
         const code = `${team.code}-${i}`
         const sticker = stickers.get(code)
+        // Hide cards that are already incoming from a locked pending trade —
+        // the visitor shouldn't be able to offer them since they're spoken for.
+        if ((locks.incoming.get(code) ?? 0) > 0) continue
         if (!sticker || sticker.count === 0) {
           out.push({ code, teamCode: team.code, num: i, name: sticker?.name ?? null, count: 0 })
         }
       }
     }
     return out
-  }, [stickers])
+  }, [stickers, locks])
 
   const allDoubles = useMemo<Item[]>(() => {
     const out: Item[] = []
@@ -56,13 +61,22 @@ export function PublicLanding() {
       for (let i = 1; i <= 20; i++) {
         const code = `${team.code}-${i}`
         const sticker = stickers.get(code)
-        if (sticker && sticker.count >= 2) {
-          out.push({ code, teamCode: team.code, num: i, name: sticker.name, count: sticker.count })
-        }
+        if (!sticker) continue
+        // Hide cards whose remaining spare (after locked outgoing) is gone.
+        const lockedOut = locks.outgoing.get(code) ?? 0
+        const effective = sticker.count - lockedOut
+        if (effective < 2) continue
+        out.push({
+          code,
+          teamCode: team.code,
+          num: i,
+          name: sticker.name,
+          count: effective,
+        })
       }
     }
     return out
-  }, [stickers])
+  }, [stickers, locks])
 
   const visibleItems = tab === 'have' ? allMissing : allDoubles
   const grouped = useMemo(() => groupByTeam(visibleItems, query, mode), [visibleItems, query, mode])

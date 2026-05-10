@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Lock } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CodeSearchInput } from '@/components/CodeSearchInput'
@@ -8,9 +8,11 @@ import { SearchBar } from '@/components/SearchBar'
 import { SearchModeToggle, type SearchMode } from '@/components/SearchModeToggle'
 import { StickerSheet } from '@/components/StickerSheet'
 import { TEAMS, stickerKind } from '@/data/teams'
+import { useAdminLocks } from '@/lib/locks'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
+import { useTrades } from '@/lib/trades'
 import { cn } from '@/lib/utils'
 
 type DoubleItem = {
@@ -23,6 +25,8 @@ type DoubleItem = {
 
 export function Doubles() {
   const stickers = useStickersMap()
+  const trades = useTrades()
+  const locks = useAdminLocks(trades)
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
   const [openCode, setOpenCode] = useState<string | null>(null)
@@ -158,10 +162,43 @@ export function Doubles() {
                         <div className="truncate text-sm font-medium text-neutral-900">
                           {labelFor(s.code, s.num, s.name)}
                         </div>
-                        <div className="text-[11px] tabular-nums text-neutral-500">
-                          {s.code} · {s.count - 1} spare
-                        </div>
+                        {(() => {
+                          const out = locks.outgoing.get(s.code) ?? []
+                          const totalSpare = s.count - 1
+                          const lockedCount = out.length
+                          const free = Math.max(0, totalSpare - lockedCount)
+                          if (lockedCount === 0) {
+                            return (
+                              <div className="text-[11px] tabular-nums text-neutral-500">
+                                {s.code} · {totalSpare} spare
+                              </div>
+                            )
+                          }
+                          return (
+                            <div className="text-[11px] tabular-nums text-neutral-500">
+                              {s.code} · {free} free
+                              <span className="ml-1 text-amber-700">
+                                · {lockedCount} locked
+                              </span>
+                            </div>
+                          )
+                        })()}
                       </div>
+                      {(() => {
+                        const out = locks.outgoing.get(s.code) ?? []
+                        if (out.length === 0) return null
+                        const subj = out[0].subject
+                        const more = out.length > 1 ? ` +${out.length - 1}` : ''
+                        return (
+                          <span
+                            className="mr-2 inline-flex max-w-[140px] items-center gap-1 truncate rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+                            title={out.map((r) => r.subject).join(', ')}
+                          >
+                            <Lock className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{subj}{more}</span>
+                          </span>
+                        )
+                      })()}
                       <span className="inline-flex h-7 min-w-9 items-center justify-center rounded-full bg-amber-500 px-2 text-xs font-bold text-white">
                         x{s.count}
                       </span>
