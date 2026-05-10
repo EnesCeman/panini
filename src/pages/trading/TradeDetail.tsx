@@ -51,6 +51,7 @@ export function TradeDetail() {
 
   const [subject, setSubject] = useState('')
   const [contact, setContact] = useState('')
+  const [location, setLocation] = useState('')
   const [giveText, setGiveText] = useState('')
   const [getText, setGetText] = useState('')
   const [notes, setNotes] = useState('')
@@ -64,6 +65,7 @@ export function TradeDetail() {
     if (lastIdRef.current === trade.id) return
     setSubject(trade.subject)
     setContact(trade.contact)
+    setLocation(trade.location)
     setGiveText(formatGroupedCodes(trade.give))
     setGetText(formatGroupedCodes(trade.get))
     setNotes(trade.notes)
@@ -96,6 +98,19 @@ export function TradeDetail() {
     setContact(next)
     try {
       await updateTrade(trade.id, { contact: next })
+      flashSaved()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  async function saveLocation() {
+    if (!trade) return
+    const next = location.trim()
+    if (next === trade.location) return
+    setLocation(next)
+    try {
+      await updateTrade(trade.id, { location: next })
       flashSaved()
     } catch (e) {
       console.error(e)
@@ -274,6 +289,17 @@ export function TradeDetail() {
           onBlur={() => void saveContact()}
           maxLength={200}
           placeholder="Phone, Telegram, Instagram, email…"
+          className="text-sm"
+        />
+      </Section>
+
+      <Section title="Location">
+        <Input
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          onBlur={() => void saveLocation()}
+          maxLength={200}
+          placeholder="City, neighborhood, meeting spot…"
           className="text-sm"
         />
       </Section>

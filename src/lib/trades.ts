@@ -17,6 +17,7 @@ export type Trade = {
   id: string
   subject: string
   contact: string
+  location: string
   give: string[]
   get: string[]
   notes: string
@@ -54,6 +55,7 @@ export function subscribeTrades(): () => void {
           // explicit subject has been written yet.
           subject: data.subject ?? data.name ?? '',
           contact: data.contact ?? '',
+          location: data.location ?? '',
           give: data.give ?? [],
           get: data.get ?? [],
           notes: data.notes ?? '',
@@ -83,6 +85,7 @@ export async function createTrade(): Promise<string> {
   const ref = await addDoc(collection(db, 'trades'), {
     subject: '',
     contact: '',
+    location: '',
     give: [],
     get: [],
     notes: '',
@@ -95,7 +98,10 @@ export async function createTrade(): Promise<string> {
 }
 
 type TradePatch = Partial<
-  Pick<Trade, 'subject' | 'contact' | 'give' | 'get' | 'notes' | 'status' | 'locked'>
+  Pick<
+    Trade,
+    'subject' | 'contact' | 'location' | 'give' | 'get' | 'notes' | 'status' | 'locked'
+  >
 >
 
 export async function updateTrade(id: string, patch: TradePatch): Promise<void> {

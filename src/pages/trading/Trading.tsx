@@ -1,4 +1,4 @@
-import { ChevronRight, ClipboardCheck, Copy, Lock, Phone, Plus } from 'lucide-react'
+import { ChevronRight, ClipboardCheck, Copy, Lock, MapPin, Phone, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -105,19 +105,21 @@ export function Trading() {
 }
 
 function TradeRow({ trade }: { trade: Trade }) {
-  const [copied, setCopied] = useState(false)
+  const [copiedField, setCopiedField] = useState<'contact' | 'location' | null>(null)
   const updated = trade.updatedAt ? formatRelative(trade.updatedAt.toMillis()) : '—'
 
-  async function handleCopyContact(e: React.MouseEvent) {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!trade.contact) return
-    try {
-      await navigator.clipboard.writeText(trade.contact)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1200)
-    } catch (err) {
-      console.error(err)
+  function handleCopy(field: 'contact' | 'location', value: string) {
+    return async (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (!value) return
+      try {
+        await navigator.clipboard.writeText(value)
+        setCopiedField(field)
+        setTimeout(() => setCopiedField(null), 1200)
+      } catch (err) {
+        console.error(err)
+      }
     }
   }
 
@@ -141,23 +143,20 @@ function TradeRow({ trade }: { trade: Trade }) {
           </div>
         </div>
         {trade.contact.length > 0 && (
-          <button
-            type="button"
-            onClick={handleCopyContact}
-            className={cn(
-              'inline-flex max-w-full items-center gap-1 text-left text-[11px] hover:text-emerald-700',
-              copied ? 'text-emerald-700' : 'text-neutral-600',
-            )}
-            title="Click to copy"
-          >
-            <Phone className="h-3 w-3 shrink-0" />
-            <span className="truncate">{copied ? 'Copied!' : trade.contact}</span>
-            {copied ? (
-              <ClipboardCheck className="h-3 w-3 shrink-0" />
-            ) : (
-              <Copy className="h-3 w-3 shrink-0 opacity-60" />
-            )}
-          </button>
+          <CopyableField
+            icon={<Phone className="h-3 w-3 shrink-0" />}
+            value={trade.contact}
+            copied={copiedField === 'contact'}
+            onClick={handleCopy('contact', trade.contact)}
+          />
+        )}
+        {trade.location.length > 0 && (
+          <CopyableField
+            icon={<MapPin className="h-3 w-3 shrink-0" />}
+            value={trade.location}
+            copied={copiedField === 'location'}
+            onClick={handleCopy('location', trade.location)}
+          />
         )}
         <div className="truncate text-[11px] text-neutral-500">
           Giving {trade.give.length} · Getting {trade.get.length} · {updated}
@@ -170,6 +169,38 @@ function TradeRow({ trade }: { trade: Trade }) {
       </div>
       <ChevronRight className="h-4 w-4 shrink-0 text-neutral-400" />
     </Link>
+  )
+}
+
+function CopyableField({
+  icon,
+  value,
+  copied,
+  onClick,
+}: {
+  icon: React.ReactNode
+  value: string
+  copied: boolean
+  onClick: (e: React.MouseEvent) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'inline-flex max-w-full items-center gap-1 text-left text-[11px] hover:text-emerald-700',
+        copied ? 'text-emerald-700' : 'text-neutral-600',
+      )}
+      title="Click to copy"
+    >
+      {icon}
+      <span className="truncate">{copied ? 'Copied!' : value}</span>
+      {copied ? (
+        <ClipboardCheck className="h-3 w-3 shrink-0" />
+      ) : (
+        <Copy className="h-3 w-3 shrink-0 opacity-60" />
+      )}
+    </button>
   )
 }
 
