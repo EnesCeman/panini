@@ -278,7 +278,12 @@ export function TradeDetail() {
         </div>
       </div>
 
-      <LockSection trade={trade} allTrades={allTrades} onToggle={() => void toggleLock()} />
+      <LockSection
+        trade={trade}
+        allTrades={allTrades}
+        stickers={stickers}
+        onToggle={() => void toggleLock()}
+      />
 
       <Section title="Contact">
         <Input
@@ -469,17 +474,19 @@ export function TradeDetail() {
 function LockSection({
   trade,
   allTrades,
+  stickers,
   onToggle,
 }: {
   trade: ReturnType<typeof useTrade>
   allTrades: ReturnType<typeof useTrades>
+  stickers: ReturnType<typeof useStickersMap>
   onToggle: () => void
 }) {
   const overlaps = useMemo(() => {
     if (!trade) return []
     if (trade.locked) return []
-    return findGiveOverlaps(trade.id, trade.give, allTrades.values())
-  }, [trade, allTrades])
+    return findGiveOverlaps(trade.id, trade.give, allTrades.values(), stickers)
+  }, [trade, allTrades, stickers])
 
   if (!trade) return null
 

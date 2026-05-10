@@ -57,16 +57,19 @@ export function useAdminLocks(trades: Map<string, Trade>): AdminLocks {
 }
 
 // Find this trade's give-overlap against other locked-pending trades.
-// Used to block locking when the same code is already promised elsewhere.
+// A code is only flagged when locking this trade would push total
+// commitments across active trades above the number of copies the user
+// owns. Codes with extra copies don't block (e.g. count=3 with one
+// already locked elsewhere still allows another lock).
 export type GiveOverlap = { code: string; otherTrade: LockedTradeRef }
 
 export function findGiveOverlaps(
   thisTradeId: string,
   thisGive: string[],
   trades: Iterable<Trade>,
+  stickers: Map<string, { count: number }>,
 ): GiveOverlap[] {
-  const overlaps: GiveOverlap[] = []
-  const thisGiveSet = new Set(thisGive)
+  const otherCommits = new Map<string, LockedTradeRef[]>()
   for (const t of trades) {
     if (t.id === thisTradeId) continue
     if (!isActive(t)) continue
@@ -75,7 +78,19 @@ export function findGiveOverlaps(
       subject: t.subject.trim().length > 0 ? t.subject : 'Untitled trade',
     }
     for (const code of t.give) {
-      if (thisGiveSet.has(code)) {
+      const list = otherCommits.get(code) ?? []
+      list.push(ref)
+      otherCommits.set(code, list)
+    }
+  }
+
+  const overlaps: GiveOverlap[] = []
+  for (const code of new Set(thisGive)) {
+    const otherList = otherCommits.get(code) ?? []
+    if (otherList.length === 0) continue
+    const owned = stickers.get(code)?.count ?? 0
+    if (otherList.length + 1 > owned) {
+      for (const ref of otherList) {
         overlaps.push({ code, otherTrade: ref })
       }
     }
