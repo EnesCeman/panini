@@ -185,8 +185,9 @@ export function PublicLanding() {
         />
 
         {!bothEmpty && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] gap-3">
             <ColumnHeader title={t('public.col.iNeed')} count={selectedNeed.size} />
+            <div className="bg-neutral-300" aria-hidden />
             <ColumnHeader title={t('public.col.iHave')} count={selectedHave.size} />
           </div>
         )}
@@ -198,13 +199,14 @@ export function PublicLanding() {
             {adminMissing.length === 0 ? t('public.albumComplete') : t('public.noDoubles')}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] gap-3">
             <ColumnList
               groups={needGroups}
               selected={selectedNeed}
               onToggle={toggleNeed}
               showSpareCount
             />
+            <div className="bg-neutral-300" aria-hidden />
             <ColumnList
               groups={haveGroups}
               selected={selectedHave}
@@ -419,5 +421,4 @@ function groupByTeam(
   }
   return TEAMS.map((tt) => ({ team: tt, items: map.get(tt.code) ?? [] }))
     .filter((g) => g.items.length > 0)
-    .sort((a, b) => a.team.name.localeCompare(b.team.name))
 }
