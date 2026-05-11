@@ -334,15 +334,16 @@ export function TradeDetail() {
               count: sticker?.count ?? 0,
             }
           })
-          const dontHave = annotated.filter((r) => r.count === 0)
-          const available = annotated.filter((r) => r.count > 0)
+          const noSpares = annotated.filter((r) => r.count <= 1)
+          const available = annotated.filter((r) => r.count >= 2)
           return (
             <>
-              {dontHave.length > 0 && (
+              {noSpares.length > 0 && (
                 <AnnotatedTable
-                  title={`Don't have — ${dontHave.length} (possible mistake)`}
+                  title={`Don't have spares — ${noSpares.length} (possible mistake)`}
                   tone="rose"
-                  rows={dontHave}
+                  rows={noSpares}
+                  showCount
                   onRemove={(code) => void removeCode('give', code)}
                 />
               )}
@@ -351,6 +352,7 @@ export function TradeDetail() {
                   title={`Available — ${available.length}`}
                   tone="emerald"
                   rows={available}
+                  showCount
                   onRemove={(code) => void removeCode('give', code)}
                 />
               )}
@@ -362,7 +364,7 @@ export function TradeDetail() {
                   · <strong>{available.length}</strong> available
                 </span>
                 <span className="text-rose-700">
-                  · <strong>{dontHave.length}</strong> don't have
+                  · <strong>{noSpares.length}</strong> don't have spares
                 </span>
               </div>
             </>
@@ -745,16 +747,18 @@ function AnnotatedTable({
                   {r.name} · {r.teamName}
                 </div>
               </div>
-              {showCount && r.count > 0 && (
+              {showCount && (
                 <span
                   className={cn(
                     'inline-flex h-6 min-w-9 shrink-0 items-center justify-center rounded-full px-2 text-[11px] font-bold',
                     r.count >= 2
                       ? 'bg-amber-500 text-white'
-                      : 'bg-emerald-600 text-white',
+                      : r.count === 1
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-neutral-200 text-neutral-500',
                   )}
                 >
-                  {r.count >= 2 ? `x${r.count}` : '1'}
+                  {r.count >= 2 ? `x${r.count}` : r.count}
                 </span>
               )}
               {onRemove && <RemoveButton code={r.code} onRemove={onRemove} />}
