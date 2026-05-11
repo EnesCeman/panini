@@ -2,21 +2,20 @@ import { Check, Send } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { CodeSearchInput } from '@/components/CodeSearchInput'
 import { Flag } from '@/components/Flag'
-import { GroupPill } from '@/components/GroupPill'
 import { LangToggle } from '@/components/public/LangToggle'
-import { SubmitModal } from '@/components/public/SubmitModal'
+import { SuccessModal, type SubmittedRequest } from '@/components/public/SubmitModal'
 import { SearchBar } from '@/components/SearchBar'
 import { SearchModeToggle, type SearchMode } from '@/components/SearchModeToggle'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { TEAMS, stickerKind, type Team } from '@/data/teams'
 import { usePublicLocks } from '@/lib/locks'
 import { normalizeForSearch } from '@/lib/normalize'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
-import { pluralForm, usePublicLocale, usePublicT, type TKey } from '@/lib/publicI18n'
+import { usePublicLocale, usePublicT } from '@/lib/publicI18n'
 import { useStickersMap } from '@/lib/state'
+import { submitRequest } from '@/lib/submissions'
 import { cn } from '@/lib/utils'
-
-type Tab = 'have' | 'want'
 
 type Item = {
   code: string
@@ -31,22 +30,25 @@ export function PublicLanding() {
   const { locale } = usePublicLocale()
   const stickers = useStickersMap()
   const locks = usePublicLocks()
-  const [tab, setTab] = useState<Tab>('want')
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<SearchMode>('name')
+  const [selectedNeed, setSelectedNeed] = useState<Set<string>>(new Set())
   const [selectedHave, setSelectedHave] = useState<Set<string>>(new Set())
-  const [selectedWant, setSelectedWant] = useState<Set<string>>(new Set())
-  const [modalOpen, setModalOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [contact, setContact] = useState('')
+  const [note, setNote] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState<SubmittedRequest | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const allMissing = useMemo<Item[]>(() => {
+  // Admin missing (count=0) → visitor's "I have" column.
+  const adminMissing = useMemo<Item[]>(() => {
     const out: Item[] = []
     for (const team of TEAMS) {
       for (let i = 1; i <= 20; i++) {
         const code = `${team.code}-${i}`
         const sticker = stickers.get(code)
-        // Hide cards that are already incoming from a locked pending trade —
-        // the visitor shouldn't be able to offer them since they're spoken for.
         if ((locks.incoming.get(code) ?? 0) > 0) continue
         if (!sticker || sticker.count === 0) {
           out.push({ code, teamCode: team.code, num: i, name: sticker?.name ?? null, count: 0 })
@@ -56,47 +58,41 @@ export function PublicLanding() {
     return out
   }, [stickers, locks])
 
-  const allDoubles = useMemo<Item[]>(() => {
+  // Admin doubles → visitor's "I need" column.
+  const adminDoubles = useMemo<Item[]>(() => {
     const out: Item[] = []
     for (const team of TEAMS) {
       for (let i = 1; i <= 20; i++) {
         const code = `${team.code}-${i}`
         const sticker = stickers.get(code)
         if (!sticker) continue
-        // Hide cards whose remaining spare (after locked outgoing) is gone.
         const lockedOut = locks.outgoing.get(code) ?? 0
         const effective = sticker.count - lockedOut
         if (effective < 2) continue
-        out.push({
-          code,
-          teamCode: team.code,
-          num: i,
-          name: sticker.name,
-          count: effective,
-        })
+        out.push({ code, teamCode: team.code, num: i, name: sticker.name, count: effective })
       }
     }
     return out
   }, [stickers, locks])
 
-  const visibleItems = tab === 'have' ? allMissing : allDoubles
-  const grouped = useMemo(() => groupByTeam(visibleItems, query, mode), [visibleItems, query, mode])
+  const needGroups = useMemo(() => groupByTeam(adminDoubles, query, mode), [adminDoubles, query, mode])
+  const haveGroups = useMemo(() => groupByTeam(adminMissing, query, mode), [adminMissing, query, mode])
 
-  const selected = tab === 'have' ? selectedHave : selectedWant
-  const setSelected = tab === 'have' ? setSelectedHave : setSelectedWant
-
-  function toggle(code: string) {
-    setSelected((prev) => {
+  function toggleNeed(code: string) {
+    setSelectedNeed((prev) => {
       const next = new Set(prev)
       if (next.has(code)) next.delete(code)
       else next.add(code)
       return next
     })
   }
-
-  function clearAll() {
-    setSelectedHave(new Set())
-    setSelectedWant(new Set())
+  function toggleHave(code: string) {
+    setSelectedHave((prev) => {
+      const next = new Set(prev)
+      if (next.has(code)) next.delete(code)
+      else next.add(code)
+      return next
+    })
   }
 
   function handleQueryChange(v: string) {
@@ -112,20 +108,52 @@ export function PublicLanding() {
     setQuery('')
   }
 
-  const totalSelected = selectedHave.size + selectedWant.size
-  const heading = tab === 'have' ? t('public.have.heading') : t('public.want.heading')
-  const sub = tab === 'have' ? t('public.have.sub') : t('public.want.sub')
-  const emptyMessage =
-    tab === 'have' && allMissing.length === 0
-      ? t('public.albumComplete')
-      : tab === 'want' && allDoubles.length === 0
-        ? t('public.noDoubles')
-        : t('public.empty')
+  async function handleSubmit() {
+    setError(null)
+    const totalSelected = selectedNeed.size + selectedHave.size
+    if (totalSelected === 0) {
+      setError(t('public.submit.zero'))
+      return
+    }
+    if (name.trim().length === 0) {
+      setError(t('public.requiredName'))
+      return
+    }
+    if (contact.trim().length === 0) {
+      setError(t('public.requiredContact'))
+      return
+    }
+    setSubmitting(true)
+    try {
+      const theyHave = Array.from(selectedHave)
+      const theyWant = Array.from(selectedNeed)
+      const id = await submitRequest({ name, contact, note, theyHave, theyWant, locale })
+      setSubmitted({ id, theyHave, theyWant })
+    } catch (e) {
+      console.error(e)
+      setError(t('public.modal.error'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  function handleAnother() {
+    setSelectedHave(new Set())
+    setSelectedNeed(new Set())
+    setName('')
+    setContact('')
+    setNote('')
+    setError(null)
+    setSubmitted(null)
+  }
+
+  const totalSelected = selectedNeed.size + selectedHave.size
+  const bothEmpty = adminDoubles.length === 0 && adminMissing.length === 0
 
   return (
     <div className="mx-auto min-h-dvh max-w-md bg-neutral-50 pb-32" ref={containerRef}>
-      <header
-        className="sticky top-0 z-20 flex flex-col gap-3 border-b border-neutral-200 bg-neutral-50 px-4 pb-3"
+      <div
+        className="sticky top-0 z-20 flex flex-col gap-2.5 border-b border-neutral-200 bg-neutral-50 px-4 pb-2.5"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >
         <div className="flex items-center justify-between gap-2">
@@ -136,148 +164,220 @@ export function PublicLanding() {
           <LangToggle className="shrink-0" />
         </div>
 
-        <div className="inline-flex w-full overflow-hidden rounded-md border border-neutral-200 text-xs font-medium">
-          {(['want', 'have'] as const).map((tk) => {
-            const count = tk === 'have' ? selectedHave.size : selectedWant.size
-            const label =
-              tk === 'have'
-                ? t('public.tab.have', { count })
-                : t('public.tab.want', { count })
-            return (
-              <button
-                key={tk}
-                type="button"
-                onClick={() => setTab(tk)}
-                className={cn(
-                  'flex-1 px-3 py-1.5',
-                  tab === tk
-                    ? 'bg-neutral-900 text-white'
-                    : 'bg-white text-neutral-600 hover:bg-neutral-100',
-                )}
-              >
-                {label}
-              </button>
-            )
-          })}
-        </div>
-
         <div className="flex items-center gap-2">
           <div className="flex-1">
             {mode === 'code' ? (
               <CodeSearchInput value={query} onChange={handleQueryChange} />
             ) : (
-              <SearchBar
-                value={query}
-                onChange={handleQueryChange}
-                placeholder={t('public.search.name')}
-              />
+              <SearchBar value={query} onChange={handleQueryChange} placeholder={t('public.search.name')} />
             )}
           </div>
           <SearchModeToggle mode={mode} onChange={handleModeChange} />
         </div>
-      </header>
 
-      <div className="px-4 pt-4">
-        <h2 className="text-xl font-bold uppercase tracking-tight text-neutral-900">
-          {heading}
-        </h2>
-        <p className="mt-1 text-xs text-neutral-600">{sub}</p>
+        <ContactSection
+          name={name}
+          setName={setName}
+          contact={contact}
+          setContact={setContact}
+          note={note}
+          setNote={setNote}
+        />
+
+        {!bothEmpty && (
+          <div className="grid grid-cols-2 gap-2">
+            <ColumnHeader title={t('public.col.iNeed')} count={selectedNeed.size} />
+            <ColumnHeader title={t('public.col.iHave')} count={selectedHave.size} />
+          </div>
+        )}
       </div>
 
-      {grouped.length === 0 ? (
-        <div className="flex min-h-[40vh] items-center justify-center px-4 py-12 text-center text-sm text-neutral-500">
-          {emptyMessage}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-5 px-4 pt-4">
-          {grouped.map(({ team, items }) => (
-            <section key={team.code}>
-              <div className="mb-2 flex items-center gap-2">
-                <Flag code={team.code} className="h-4 w-6 shrink-0" />
-                <span className="truncate text-sm font-semibold text-neutral-900">
-                  {team.name}
-                </span>
-                <GroupPill group={team.group} />
-                <span className="ml-auto text-xs tabular-nums text-neutral-500">{items.length}</span>
-              </div>
-              <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
-                {items.map((it, idx) => {
-                  const isSelected = selected.has(it.code)
-                  return (
-                    <li
-                      key={it.code}
-                      className={cn(
-                        idx !== items.length - 1 && 'border-b border-neutral-100',
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => toggle(it.code)}
-                        className={cn(
-                          'flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-neutral-50',
-                          isSelected && 'bg-emerald-50',
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-[11px] font-bold',
-                            isSelected
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-neutral-200 text-neutral-700',
-                          )}
-                        >
-                          {isSelected ? <Check className="h-3.5 w-3.5" /> : it.num}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium text-neutral-900">
-                            {labelFor(it.code, it.num, it.name)}
-                          </div>
-                          {tab === 'want' && (() => {
-                            const spare = it.count - 1
-                            const key =
-                              `public.spare.${pluralForm(spare, locale)}` as TKey
-                            return (
-                              <div className="text-[11px] text-neutral-500">
-                                {t(key, { count: spare })}
-                              </div>
-                            )
-                          })()}
-                        </div>
-                        <span className="text-xs tabular-nums text-neutral-400">{it.code}</span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
-          ))}
-        </div>
-      )}
+      <div className="px-4 pt-3">
+        {bothEmpty ? (
+          <div className="flex min-h-[30vh] items-center justify-center px-4 py-12 text-center text-sm text-neutral-500">
+            {adminMissing.length === 0 ? t('public.albumComplete') : t('public.noDoubles')}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <ColumnList
+              groups={needGroups}
+              selected={selectedNeed}
+              onToggle={toggleNeed}
+              showSpareCount
+            />
+            <ColumnList
+              groups={haveGroups}
+              selected={selectedHave}
+              onToggle={toggleHave}
+            />
+          </div>
+        )}
+      </div>
 
       <div
         className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md border-t border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
       >
+        {error && (
+          <p className="mb-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-700">
+            {error}
+          </p>
+        )}
         <Button
           type="button"
-          onClick={() => setModalOpen(true)}
-          disabled={totalSelected === 0}
+          onClick={() => void handleSubmit()}
+          disabled={submitting || totalSelected === 0}
           className="h-12 w-full text-base"
         >
           <Send className="h-4 w-4" />
-          {totalSelected === 0
-            ? t('public.submit.zero')
-            : t('public.submit', { count: totalSelected })}
+          {submitting
+            ? t('public.modal.sending')
+            : totalSelected === 0
+              ? t('public.submit.zero')
+              : t('public.submit', { count: totalSelected })}
         </Button>
       </div>
 
-      {modalOpen && (
-        <SubmitModal
-          theyHave={Array.from(selectedHave)}
-          theyWant={Array.from(selectedWant)}
-          onClose={() => setModalOpen(false)}
-          onCleared={clearAll}
-        />
+      {submitted && <SuccessModal submitted={submitted} onAnother={handleAnother} />}
+    </div>
+  )
+}
+
+function ContactSection({
+  name,
+  setName,
+  contact,
+  setContact,
+  note,
+  setNote,
+}: {
+  name: string
+  setName: (v: string) => void
+  contact: string
+  setContact: (v: string) => void
+  note: string
+  setNote: (v: string) => void
+}) {
+  const t = usePublicT()
+  return (
+    <div className="grid grid-cols-2 gap-1.5">
+      <Input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder={t('public.modal.namePh')}
+        maxLength={80}
+        autoComplete="name"
+        className="h-9 text-xs"
+      />
+      <Input
+        value={contact}
+        onChange={(e) => setContact(e.target.value)}
+        placeholder={t('public.modal.contactPh')}
+        maxLength={200}
+        className="h-9 text-xs"
+      />
+      <Input
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder={t('public.modal.notePh')}
+        maxLength={500}
+        className="col-span-2 h-9 text-xs"
+      />
+    </div>
+  )
+}
+
+function ColumnHeader({ title, count }: { title: string; count: number }) {
+  return (
+    <div className="flex items-start justify-between gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5">
+      <p className="text-[11px] font-medium leading-snug text-neutral-800">{title}</p>
+      {count > 0 && (
+        <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-bold text-white">
+          {count}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function ColumnList({
+  groups,
+  selected,
+  onToggle,
+  showSpareCount,
+}: {
+  groups: { team: Team; items: Item[] }[]
+  selected: Set<string>
+  onToggle: (code: string) => void
+  showSpareCount?: boolean
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-2.5">
+      {groups.length === 0 ? (
+        <p className="py-4 text-center text-[11px] italic text-neutral-400">—</p>
+      ) : (
+        groups.map(({ team, items }) => (
+          <section key={team.code} className="min-w-0">
+            <div className="mb-1 flex items-center gap-1.5">
+              <Flag code={team.code} className="h-3 w-4 shrink-0" />
+              <span className="min-w-0 truncate text-[11px] font-semibold text-neutral-900">
+                {team.name}
+              </span>
+              <span className="ml-auto text-[10px] tabular-nums text-neutral-400">
+                {items.length}
+              </span>
+            </div>
+            <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+              {items.map((it, idx) => {
+                const isSelected = selected.has(it.code)
+                const label = labelFor(it.code, it.num, it.name)
+                return (
+                  <li
+                    key={it.code}
+                    className={cn(
+                      idx !== items.length - 1 && 'border-b border-neutral-100',
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onToggle(it.code)}
+                      className={cn(
+                        'flex w-full items-center gap-2 px-2 py-1.5 text-left active:bg-neutral-50',
+                        isSelected && 'bg-emerald-50',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
+                          isSelected
+                            ? 'border-emerald-600 bg-emerald-600 text-white'
+                            : 'border-neutral-300 bg-white',
+                        )}
+                      >
+                        {isSelected && <Check className="h-3 w-3" strokeWidth={3} />}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-mono text-xs font-bold text-neutral-900">
+                            {it.code}
+                          </span>
+                          {showSpareCount && it.count >= 2 && (
+                            <span className="text-[9px] font-semibold tabular-nums text-amber-700">
+                              ×{it.count - 1}
+                            </span>
+                          )}
+                        </div>
+                        <div className="truncate text-[10px] leading-tight text-neutral-500">
+                          {label}
+                        </div>
+                      </div>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        ))
       )}
     </div>
   )
