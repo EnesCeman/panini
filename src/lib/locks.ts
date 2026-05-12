@@ -58,9 +58,11 @@ export function useAdminLocks(trades: Map<string, Trade>): AdminLocks {
 
 // Find this trade's give-overlap against other locked-pending trades.
 // A code is only flagged when locking this trade would push total
-// commitments across active trades above the number of copies the user
-// owns. Codes with extra copies don't block (e.g. count=3 with one
-// already locked elsewhere still allows another lock).
+// commitments across active trades above the user's giveable supply.
+// One copy is always reserved for the album, so giveable = max(0,
+// count - 1). E.g. count=3 has 2 spares; one lock elsewhere still
+// leaves room for another. count=2 has 1 spare; a single existing
+// lock blocks any further locks.
 export type GiveOverlap = { code: string; otherTrade: LockedTradeRef }
 
 export function findGiveOverlaps(
@@ -89,7 +91,8 @@ export function findGiveOverlaps(
     const otherList = otherCommits.get(code) ?? []
     if (otherList.length === 0) continue
     const owned = stickers.get(code)?.count ?? 0
-    if (otherList.length + 1 > owned) {
+    const giveable = Math.max(0, owned - 1)
+    if (otherList.length + 1 > giveable) {
       for (const ref of otherList) {
         overlaps.push({ code, otherTrade: ref })
       }
