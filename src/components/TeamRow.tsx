@@ -2,7 +2,7 @@ import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { ProgressBar } from './ProgressBar'
 import { Flag } from './Flag'
-import { useTeamProgress } from '@/lib/state'
+import { useTeamMissing, useTeamProgress } from '@/lib/state'
 import { cn } from '@/lib/utils'
 import { groupColor } from '@/lib/groupColors'
 import type { Team } from '@/data/teams'
@@ -14,6 +14,7 @@ type Props = {
 
 export function TeamRow({ team, dense = false }: Props) {
   const { have, total } = useTeamProgress(team.code)
+  const missing = useTeamMissing(team.code)
   const c = groupColor(team.group)
   return (
     <Link
@@ -33,6 +34,11 @@ export function TeamRow({ team, dense = false }: Props) {
           </span>
         </div>
         <ProgressBar value={have} max={total} className="mt-1.5 h-1.5" />
+        {missing.length > 0 && (
+          <div className="mt-1 text-[10px] leading-snug text-neutral-500">
+            {missing.join(', ')}
+          </div>
+        )}
       </div>
       <ChevronRight className="h-4 w-4 shrink-0 text-neutral-400" />
     </Link>

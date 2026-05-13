@@ -106,6 +106,27 @@ export function useTeamProgress(teamCode: string) {
   )
 }
 
+function missingLabel(num: number, name: string | null): string {
+  if (name) return `${num} ${name}`
+  if (num === 1) return `${num} Badge`
+  if (num === 13) return `${num} Team Photo`
+  return `${num}`
+}
+
+export function useTeamMissing(teamCode: string): string[] {
+  return useStore(
+    useShallow((s) => {
+      const out: string[] = []
+      for (let i = 1; i <= 20; i++) {
+        const sticker = s.stickers.get(`${teamCode}-${i}`)
+        if (sticker && sticker.count >= 1) continue
+        out.push(missingLabel(i, sticker?.name ?? null))
+      }
+      return out
+    }),
+  )
+}
+
 export function useToasts() {
   return useStore((s) => s.toasts)
 }
