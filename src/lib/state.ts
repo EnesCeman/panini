@@ -10,6 +10,7 @@ import { create } from 'zustand'
 import { useShallow } from 'zustand/shallow'
 import { TEAMS } from '@/data/teams'
 import { db } from './firebase'
+import { resolvePlayerLabel } from './playerName'
 
 export type Sticker = { count: number; name: string | null }
 export type Toast = { id: number; message: string }
@@ -106,11 +107,11 @@ export function useTeamProgress(teamCode: string) {
   )
 }
 
-function missingLabel(num: number, name: string | null): string {
-  if (name) return `${num} ${name}`
+function missingLabel(code: string, num: number, name: string | null): string {
   if (num === 1) return `${num} Badge`
   if (num === 13) return `${num} Team Photo`
-  return `${num}`
+  const label = resolvePlayerLabel(code, name)
+  return label === code ? `${num}` : `${num} ${label}`
 }
 
 export function useTeamMissing(teamCode: string): string[] {
@@ -118,9 +119,10 @@ export function useTeamMissing(teamCode: string): string[] {
     useShallow((s) => {
       const out: string[] = []
       for (let i = 1; i <= 20; i++) {
-        const sticker = s.stickers.get(`${teamCode}-${i}`)
+        const code = `${teamCode}-${i}`
+        const sticker = s.stickers.get(code)
         if (sticker && sticker.count >= 1) continue
-        out.push(missingLabel(i, sticker?.name ?? null))
+        out.push(missingLabel(code, i, sticker?.name ?? null))
       }
       return out
     }),
