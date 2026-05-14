@@ -1,6 +1,7 @@
-import { ArrowUpDown, ClipboardList, GitCompare, Inbox, Lock } from 'lucide-react'
+import { ArrowUpDown, ClipboardList, GitCompare, Inbox, Lock, Share2 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { BulkAdjuster } from '@/components/BulkAdjuster'
+import { CardsExport } from '@/components/CardsExport'
 import { CodeChecker } from '@/components/CodeChecker'
 import { CodeSearchInput } from '@/components/CodeSearchInput'
 import { OverlapChecker } from '@/components/OverlapChecker'
@@ -56,6 +57,7 @@ export function Cards() {
   const [bulkOpen, setBulkOpen] = useState(false)
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [overlapOpen, setOverlapOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   function handleQueryChange(v: string) {
@@ -163,6 +165,16 @@ export function Cards() {
             <GitCompare className="h-3.5 w-3.5" />
             Overlap
           </button>
+          <button
+            type="button"
+            onClick={() => setExportOpen(true)}
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-neutral-700 hover:bg-neutral-100"
+            aria-label="Export lists"
+            title="Copy your missing or duplicate codes grouped by team in album order"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            Export
+          </button>
         </div>
         {mode === 'code' ? (
           <CodeSearchInput value={query} onChange={handleQueryChange} />
@@ -223,6 +235,7 @@ export function Cards() {
       {bulkOpen && <CodeChecker onClose={() => setBulkOpen(false)} />}
       {adjustOpen && <BulkAdjuster onClose={() => setAdjustOpen(false)} />}
       {overlapOpen && <OverlapChecker onClose={() => setOverlapOpen(false)} />}
+      {exportOpen && <CardsExport onClose={() => setExportOpen(false)} />}
     </div>
   )
 }
