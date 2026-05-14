@@ -1,4 +1,4 @@
-import { Check, Send } from 'lucide-react'
+import { Check, Download, Send, Upload } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { CodeSearchInput } from '@/components/CodeSearchInput'
 import { Flag } from '@/components/Flag'
@@ -185,10 +185,17 @@ export function PublicLanding() {
         />
 
         {!bothEmpty && (
-          <div className="grid grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] gap-3">
-            <ColumnHeader title={t('public.col.iNeed')} count={selectedNeed.size} />
-            <div className="bg-neutral-300" aria-hidden />
-            <ColumnHeader title={t('public.col.iHave')} count={selectedHave.size} />
+          <div className="grid grid-cols-2 gap-2">
+            <ColumnHeader
+              title={t('public.col.iNeed')}
+              count={selectedNeed.size}
+              tone="iNeed"
+            />
+            <ColumnHeader
+              title={t('public.col.iHave')}
+              count={selectedHave.size}
+              tone="iHave"
+            />
           </div>
         )}
       </div>
@@ -199,18 +206,19 @@ export function PublicLanding() {
             {adminMissing.length === 0 ? t('public.albumComplete') : t('public.noDoubles')}
           </div>
         ) : (
-          <div className="grid grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <ColumnList
               groups={needGroups}
               selected={selectedNeed}
               onToggle={toggleNeed}
               showSpareCount
+              tone="iNeed"
             />
-            <div className="bg-neutral-300" aria-hidden />
             <ColumnList
               groups={haveGroups}
               selected={selectedHave}
               onToggle={toggleHave}
+              tone="iHave"
             />
           </div>
         )}
@@ -289,12 +297,78 @@ function ContactSection({
   )
 }
 
-function ColumnHeader({ title, count }: { title: string; count: number }) {
+type ColumnTone = 'iNeed' | 'iHave'
+
+const TONE_STYLES: Record<
+  ColumnTone,
+  {
+    Icon: typeof Download
+    header: string
+    headerText: string
+    headerIcon: string
+    countBadge: string
+    panel: string
+    listBorder: string
+    itemAccent: string
+    itemSelected: string
+    checkboxOn: string
+  }
+> = {
+  iNeed: {
+    Icon: Download,
+    header: 'border-emerald-400 bg-emerald-100',
+    headerText: 'text-emerald-900',
+    headerIcon: 'text-emerald-700',
+    countBadge: 'bg-emerald-600',
+    panel: 'bg-emerald-50/60 ring-1 ring-emerald-100',
+    listBorder: 'border-emerald-200',
+    itemAccent: 'border-l-emerald-400',
+    itemSelected: 'bg-emerald-100',
+    checkboxOn: 'border-emerald-600 bg-emerald-600',
+  },
+  iHave: {
+    Icon: Upload,
+    header: 'border-sky-400 bg-sky-100',
+    headerText: 'text-sky-900',
+    headerIcon: 'text-sky-700',
+    countBadge: 'bg-sky-600',
+    panel: 'bg-sky-50/60 ring-1 ring-sky-100',
+    listBorder: 'border-sky-200',
+    itemAccent: 'border-l-sky-400',
+    itemSelected: 'bg-sky-100',
+    checkboxOn: 'border-sky-600 bg-sky-600',
+  },
+}
+
+function ColumnHeader({
+  title,
+  count,
+  tone,
+}: {
+  title: string
+  count: number
+  tone: ColumnTone
+}) {
+  const s = TONE_STYLES[tone]
+  const Icon = s.Icon
   return (
-    <div className="flex items-start justify-between gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5">
-      <p className="text-[11px] font-medium leading-snug text-neutral-800">{title}</p>
+    <div
+      className={cn(
+        'flex items-start gap-1.5 rounded-md border px-2.5 py-1.5',
+        s.header,
+      )}
+    >
+      <Icon className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', s.headerIcon)} />
+      <p className={cn('flex-1 text-[11px] font-semibold leading-snug', s.headerText)}>
+        {title}
+      </p>
       {count > 0 && (
-        <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-bold text-white">
+        <span
+          className={cn(
+            'inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white',
+            s.countBadge,
+          )}
+        >
           {count}
         </span>
       )}
@@ -307,14 +381,17 @@ function ColumnList({
   selected,
   onToggle,
   showSpareCount,
+  tone,
 }: {
   groups: { team: Team; items: Item[] }[]
   selected: Set<string>
   onToggle: (code: string) => void
   showSpareCount?: boolean
+  tone: ColumnTone
 }) {
+  const s = TONE_STYLES[tone]
   return (
-    <div className="flex min-w-0 flex-col gap-2.5">
+    <div className={cn('flex min-w-0 flex-col gap-2.5 rounded-lg p-1.5', s.panel)}>
       {groups.length === 0 ? (
         <p className="py-4 text-center text-[11px] italic text-neutral-400">—</p>
       ) : (
@@ -329,7 +406,12 @@ function ColumnList({
                 {items.length}
               </span>
             </div>
-            <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+            <ul
+              className={cn(
+                'overflow-hidden rounded-lg border bg-white',
+                s.listBorder,
+              )}
+            >
               {items.map((it, idx) => {
                 const isSelected = selected.has(it.code)
                 const label = labelFor(it.code, it.num, it.name)
@@ -344,15 +426,16 @@ function ColumnList({
                       type="button"
                       onClick={() => onToggle(it.code)}
                       className={cn(
-                        'flex w-full items-center gap-2 px-2 py-1.5 text-left active:bg-neutral-50',
-                        isSelected && 'bg-emerald-50',
+                        'flex w-full items-center gap-2 border-l-2 px-2 py-1.5 text-left',
+                        isSelected ? s.itemSelected : 'active:bg-neutral-50',
+                        s.itemAccent,
                       )}
                     >
                       <span
                         className={cn(
                           'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
                           isSelected
-                            ? 'border-emerald-600 bg-emerald-600 text-white'
+                            ? cn('text-white', s.checkboxOn)
                             : 'border-neutral-300 bg-white',
                         )}
                       >
