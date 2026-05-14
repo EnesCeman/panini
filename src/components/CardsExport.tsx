@@ -2,7 +2,9 @@ import { Copy, Download, Upload, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { GROUPS, TEAMS } from '@/data/teams'
+import { useAdminLocks } from '@/lib/locks'
 import { useStickersMap } from '@/lib/state'
+import { useTrades } from '@/lib/trades'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -22,6 +24,8 @@ type Section = {
 
 export function CardsExport({ onClose }: Props) {
   const stickers = useStickersMap()
+  const trades = useTrades()
+  const locks = useAdminLocks(trades)
   const [withGroupHeaders, setWithGroupHeaders] = useState(false)
   const [copied, setCopied] = useState<Tone | null>(null)
 
@@ -33,11 +37,13 @@ export function CardsExport({ onClose }: Props) {
         const code = `${team.code}-${i}`
         const sticker = stickers.get(code)
         const count = sticker?.count ?? 0
-        if (count === 0) {
+        const outgoingLocks = locks.outgoing.get(code)?.length ?? 0
+        const incomingLocks = locks.incoming.get(code)?.length ?? 0
+        if (count === 0 && incomingLocks === 0) {
           const list = missing.get(team.code) ?? []
           list.push(i)
           missing.set(team.code, list)
-        } else if (count >= 2) {
+        } else if (count - outgoingLocks >= 2) {
           const list = spares.get(team.code) ?? []
           list.push(i)
           spares.set(team.code, list)
@@ -73,7 +79,7 @@ export function CardsExport({ onClose }: Props) {
       {
         tone: 'missing',
         title: 'Missing — codes I need',
-        hint: 'Stickers you have 0 of, in album order.',
+        hint: 'Stickers you have 0 of, excluding ones already incoming in a locked pending trade.',
         totalCodes: missingOut.codes,
         totalTeams: missingOut.teams,
         text: missingOut.text,
@@ -81,13 +87,13 @@ export function CardsExport({ onClose }: Props) {
       {
         tone: 'spares',
         title: 'Duplicates — codes I have spare',
-        hint: 'Stickers you have 2 or more of, in album order.',
+        hint: 'Stickers with at least one free spare after subtracting locked pending give-aways.',
         totalCodes: sparesOut.codes,
         totalTeams: sparesOut.teams,
         text: sparesOut.text,
       },
     ]
-  }, [stickers, withGroupHeaders])
+  }, [stickers, locks, withGroupHeaders])
 
   async function handleCopy(tone: Tone, text: string) {
     if (!text) return
