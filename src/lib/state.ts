@@ -187,18 +187,26 @@ export async function setStickerName(code: string, name: string) {
 
 export async function incrementMany(codes: string[]): Promise<void> {
   if (codes.length === 0) return
+  // Duplicates in `codes` mean "apply +1 per occurrence", so collapse to a
+  // delta map first — otherwise the local snapshot reads stale counts and
+  // only the last patch sticks.
+  const deltas = new Map<string, number>()
+  for (const code of codes) {
+    deltas.set(code, (deltas.get(code) ?? 0) + 1)
+  }
   const state = useStore.getState()
   const before = new Map<string, Sticker>()
-  for (const code of codes) {
+  for (const [code, delta] of deltas) {
     const prev = state.stickers.get(code) ?? EMPTY_STICKER
     before.set(code, prev)
-    state.patchSticker(code, { ...prev, count: prev.count + 1 })
+    state.patchSticker(code, { ...prev, count: prev.count + delta })
   }
+  const entries = Array.from(deltas.entries())
   const results = await Promise.allSettled(
-    codes.map((code) =>
+    entries.map(([code, delta]) =>
       setDoc(
         doc(db, 'stickers', code),
-        { count: fsIncrement(1), updatedAt: serverTimestamp() },
+        { count: fsIncrement(delta), updatedAt: serverTimestamp() },
         { merge: true },
       ),
     ),
@@ -207,7 +215,7 @@ export async function incrementMany(codes: string[]): Promise<void> {
   results.forEach((r, i) => {
     if (r.status === 'rejected') {
       failures += 1
-      const code = codes[i]
+      const code = entries[i][0]
       const prev = before.get(code)
       if (prev) useStore.getState().patchSticker(code, prev)
       console.error('incrementMany failed for', code, r.reason)
@@ -222,22 +230,28 @@ export async function incrementMany(codes: string[]): Promise<void> {
 
 export async function decrementMany(codes: string[]): Promise<void> {
   if (codes.length === 0) return
+  const requested = new Map<string, number>()
+  for (const code of codes) {
+    requested.set(code, (requested.get(code) ?? 0) + 1)
+  }
   const state = useStore.getState()
   const before = new Map<string, Sticker>()
-  const eligible: string[] = []
-  for (const code of codes) {
+  const deltas = new Map<string, number>()
+  for (const [code, want] of requested) {
     const prev = state.stickers.get(code) ?? EMPTY_STICKER
     if (prev.count <= 0) continue
+    const delta = Math.min(want, prev.count)
     before.set(code, prev)
-    eligible.push(code)
-    state.patchSticker(code, { ...prev, count: prev.count - 1 })
+    deltas.set(code, delta)
+    state.patchSticker(code, { ...prev, count: prev.count - delta })
   }
-  if (eligible.length === 0) return
+  if (deltas.size === 0) return
+  const entries = Array.from(deltas.entries())
   const results = await Promise.allSettled(
-    eligible.map((code) =>
+    entries.map(([code, delta]) =>
       setDoc(
         doc(db, 'stickers', code),
-        { count: fsIncrement(-1), updatedAt: serverTimestamp() },
+        { count: fsIncrement(-delta), updatedAt: serverTimestamp() },
         { merge: true },
       ),
     ),
@@ -246,7 +260,7 @@ export async function decrementMany(codes: string[]): Promise<void> {
   results.forEach((r, i) => {
     if (r.status === 'rejected') {
       failures += 1
-      const code = eligible[i]
+      const code = entries[i][0]
       const prev = before.get(code)
       if (prev) useStore.getState().patchSticker(code, prev)
       console.error('decrementMany failed for', code, r.reason)

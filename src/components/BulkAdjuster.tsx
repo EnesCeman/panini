@@ -16,6 +16,8 @@ type Row = {
   name: string
   current: number
   next: number
+  requested: number
+  applied: number
   skip: boolean
   reason?: 'zero'
 }
@@ -31,10 +33,20 @@ export function BulkAdjuster({ onClose }: Props) {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<{ applied: number; skipped: number } | null>(null)
 
-  const parsed = useMemo(() => parseCodes(input), [input])
+  const parsed = useMemo(
+    () => parseCodes(input, { keepDuplicates: true }),
+    [input],
+  )
 
   const rows = useMemo<Row[]>(() => {
-    return parsed.valid.map((code) => {
+    const counts = new Map<string, number>()
+    const order: string[] = []
+    for (const code of parsed.valid) {
+      if (!counts.has(code)) order.push(code)
+      counts.set(code, (counts.get(code) ?? 0) + 1)
+    }
+    return order.map((code) => {
+      const requested = counts.get(code) ?? 1
       const [teamCode, numStr] = code.split('-')
       const num = parseInt(numStr, 10)
       const sticker = stickers.get(code)
@@ -43,8 +55,11 @@ export function BulkAdjuster({ onClose }: Props) {
       const name =
         userName ?? albumName ?? resolvePlayerLabel(code, null) ?? code
       const current = sticker?.count ?? 0
-      const skip = direction === 'minus' && current <= 0
-      const next = skip ? current : direction === 'plus' ? current + 1 : current - 1
+      const applied =
+        direction === 'plus' ? requested : Math.min(requested, current)
+      const next =
+        direction === 'plus' ? current + applied : current - applied
+      const skip = applied === 0
       return {
         code,
         teamCode,
@@ -52,14 +67,16 @@ export function BulkAdjuster({ onClose }: Props) {
         name,
         current,
         next,
+        requested,
+        applied,
         skip,
         reason: skip ? 'zero' : undefined,
       }
     })
   }, [parsed, stickers, direction])
 
-  const applyCount = rows.filter((r) => !r.skip).length
-  const skipCount = rows.filter((r) => r.skip).length
+  const applyCount = rows.reduce((sum, r) => sum + r.applied, 0)
+  const skipCount = rows.reduce((sum, r) => sum + (r.requested - r.applied), 0)
 
   // Reset the success view when the user changes inputs after applying.
   useEffect(() => {
@@ -68,7 +85,10 @@ export function BulkAdjuster({ onClose }: Props) {
   }, [input, direction])
 
   async function apply() {
-    const codes = rows.filter((r) => !r.skip).map((r) => r.code)
+    const codes: string[] = []
+    for (const r of rows) {
+      for (let i = 0; i < r.applied; i++) codes.push(r.code)
+    }
     if (codes.length === 0) return
     setBusy(true)
     try {
@@ -183,7 +203,7 @@ export function BulkAdjuster({ onClose }: Props) {
           <>
             <div className="mb-2 mt-4 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-neutral-900">
-                Preview ({applyCount}/{rows.length})
+                Preview ({applyCount}/{parsed.valid.length})
               </h3>
             </div>
             <ul className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
@@ -206,6 +226,19 @@ export function BulkAdjuster({ onClose }: Props) {
                           )}
                         >
                           {r.name}
+                          {r.requested > 1 && (
+                            <span
+                              className={cn(
+                                'ml-2 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums',
+                                direction === 'plus'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-rose-100 text-rose-700',
+                              )}
+                            >
+                              ×{r.requested}
+                              {r.applied !== r.requested && ` (${r.applied} apply)`}
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-neutral-500">
                           {team ? team.name : r.teamCode}

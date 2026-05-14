@@ -8,7 +8,13 @@ export type ParsedCodes = { valid: string[]; invalid: string[] }
 // compact 'IRN 2,18,20' form (one prefix → multiple numbers).
 // Valid = known team code + 1..20. Invalid = anything else that
 // matched the prefix-then-number shape.
-export function parseCodes(input: string): ParsedCodes {
+// Set keepDuplicates when each repeat represents a separate card
+// (e.g. bulk ±1 receiving two of the same sticker).
+export function parseCodes(
+  input: string,
+  options?: { keepDuplicates?: boolean },
+): ParsedCodes {
+  const keepDuplicates = options?.keepDuplicates ?? false
   const valid: string[] = []
   const invalid: string[] = []
   const seen = new Set<string>()
@@ -26,7 +32,9 @@ export function parseCodes(input: string): ParsedCodes {
         invalid.push(code)
         continue
       }
-      if (!seen.has(code)) {
+      if (keepDuplicates) {
+        valid.push(code)
+      } else if (!seen.has(code)) {
         seen.add(code)
         valid.push(code)
       }
