@@ -1,13 +1,15 @@
 import { ClipboardCheck, Copy, Inbox, Lock, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { teamByCode } from '@/data/teams'
+import { GROUPS, TEAMS, teamByCode } from '@/data/teams'
 import { useAdminLocks, type LockedTradeRef } from '@/lib/locks'
 import { parseCodes } from '@/lib/parseCodes'
 import { albumPlayerName, resolvePlayerLabel } from '@/lib/playerName'
 import { useStickersMap } from '@/lib/state'
 import { useTrades } from '@/lib/trades'
 import { cn } from '@/lib/utils'
+
+const TEAM_ALBUM_INDEX = new Map(TEAMS.map((t, i) => [t.code, i]))
 
 type Mode = 'find-missing' | 'find-duplicates'
 
@@ -62,9 +64,33 @@ function groupByTeam(codes: Iterable<string>): Map<string, number[]> {
   return out
 }
 
-function formatGrouped(groups: Map<string, number[]>): string {
-  const teams = Array.from(groups.keys()).sort()
-  return teams.map((t) => `${t} ${groups.get(t)!.join(',')}`).join('\n')
+function formatGroupedAlbum(
+  groups: Map<string, number[]>,
+  withGroupHeaders: boolean,
+): string {
+  const lines: string[] = []
+  for (const g of GROUPS) {
+    const teamsInGroup = TEAMS.filter((t) => t.group === g)
+    const groupLines: string[] = []
+    for (const team of teamsInGroup) {
+      const nums = groups.get(team.code)
+      if (!nums || nums.length === 0) continue
+      groupLines.push(`${team.code} ${nums.join(',')}`)
+    }
+    if (groupLines.length === 0) continue
+    if (withGroupHeaders) {
+      if (lines.length > 0) lines.push('')
+      lines.push(`Group ${g}:`)
+    }
+    lines.push(...groupLines)
+  }
+  return lines.join('\n')
+}
+
+function compareAlbum(a: { teamCode: string; num: number }, b: { teamCode: string; num: number }): number {
+  const ai = TEAM_ALBUM_INDEX.get(a.teamCode) ?? Number.MAX_SAFE_INTEGER
+  const bi = TEAM_ALBUM_INDEX.get(b.teamCode) ?? Number.MAX_SAFE_INTEGER
+  return ai !== bi ? ai - bi : a.num - b.num
 }
 
 type Props = {
@@ -79,6 +105,7 @@ export function CodeChecker({ onClose }: Props) {
   const [input, setInput] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [copied, setCopied] = useState(false)
+  const [withGroupHeaders, setWithGroupHeaders] = useState(false)
 
   const parsed = useMemo(() => parseCodes(input), [input])
 
@@ -112,10 +139,14 @@ export function CodeChecker({ onClose }: Props) {
     if (mode === 'find-missing') {
       const free = matches.filter((m) => m.count === 0 && m.incomingLocks.length === 0)
       const locked = matches.filter((m) => m.count === 0 && m.incomingLocks.length > 0)
+      free.sort(compareAlbum)
+      locked.sort(compareAlbum)
       return { freeActionable: free, lockedActionable: locked }
     }
     const free = matches.filter((m) => m.count >= 2 && m.count - 1 - m.outgoingLocks.length > 0)
     const locked = matches.filter((m) => m.count >= 2 && m.count - 1 - m.outgoingLocks.length <= 0)
+    free.sort(compareAlbum)
+    locked.sort(compareAlbum)
     return { freeActionable: free, lockedActionable: locked }
   }, [matches, mode])
 
@@ -150,7 +181,7 @@ export function CodeChecker({ onClose }: Props) {
     setSelected(new Set())
   }
 
-  const previewText = formatGrouped(groupByTeam(selected))
+  const previewText = formatGroupedAlbum(groupByTeam(selected), withGroupHeaders)
 
   async function copy() {
     if (!previewText) return
@@ -314,6 +345,15 @@ export function CodeChecker({ onClose }: Props) {
           className="border-t border-neutral-200 bg-white px-4 py-3"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
         >
+          <label className="mb-2 flex cursor-pointer items-center gap-2 text-xs text-neutral-700">
+            <input
+              type="checkbox"
+              checked={withGroupHeaders}
+              onChange={(e) => setWithGroupHeaders(e.target.checked)}
+              className="h-3.5 w-3.5"
+            />
+            Add <code className="rounded bg-neutral-100 px-1 font-mono text-[10px]">Group A:</code> headers
+          </label>
           <pre className="mb-3 max-h-32 overflow-auto whitespace-pre-wrap rounded bg-neutral-50 p-2 font-mono text-[11px] text-neutral-700">
             {previewText}
           </pre>

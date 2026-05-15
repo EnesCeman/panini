@@ -9,7 +9,14 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import { create } from 'zustand'
+import { TEAMS } from '@/data/teams'
 import { db } from './firebase'
+
+const ALBUM_ORDER = new Map(TEAMS.map((t, i) => [t.code, i]))
+
+function albumIndex(code: string): number {
+  return ALBUM_ORDER.get(code) ?? Number.MAX_SAFE_INTEGER
+}
 
 export type Submission = {
   id: string
@@ -112,8 +119,13 @@ export function groupCodesByTeam(codes: string[]): Map<string, number[]> {
   return out
 }
 
-export function formatGroupedCodes(codes: string[]): string {
+export function formatGroupedCodes(
+  codes: string[],
+  order: 'alpha' | 'album' = 'alpha',
+): string {
   const groups = groupCodesByTeam(codes)
-  const teams = Array.from(groups.keys()).sort()
+  const teams = Array.from(groups.keys()).sort((a, b) =>
+    order === 'album' ? albumIndex(a) - albumIndex(b) : a.localeCompare(b),
+  )
   return teams.map((t) => `${t} ${groups.get(t)!.join(',')}`).join('\n')
 }

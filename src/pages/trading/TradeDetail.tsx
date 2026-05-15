@@ -31,6 +31,13 @@ import {
 import { cn } from '@/lib/utils'
 
 const TEAM_BY_CODE = new Map(TEAMS.map((t) => [t.code, t]))
+const TEAM_ALBUM_INDEX = new Map(TEAMS.map((t, i) => [t.code, i]))
+
+function compareAlbum(aCode: string, aNum: number, bCode: string, bNum: number): number {
+  const ai = TEAM_ALBUM_INDEX.get(aCode) ?? Number.MAX_SAFE_INTEGER
+  const bi = TEAM_ALBUM_INDEX.get(bCode) ?? Number.MAX_SAFE_INTEGER
+  return ai !== bi ? ai - bi : aNum - bNum
+}
 
 const STATUS_OPTIONS: { value: TradeStatus; label: string; activeCls: string }[] = [
   { value: 'pending', label: 'Pending', activeCls: 'bg-amber-500 text-white' },
@@ -67,8 +74,8 @@ export function TradeDetail() {
     setSubject(trade.subject)
     setContact(trade.contact)
     setLocation(trade.location)
-    setGiveText(formatGroupedCodes(trade.give))
-    setGetText(formatGroupedCodes(trade.get))
+    setGiveText(formatGroupedCodes(trade.give, 'album'))
+    setGetText(formatGroupedCodes(trade.get, 'album'))
     setNotes(trade.notes)
     lastIdRef.current = trade.id
   }, [trade])
@@ -328,12 +335,15 @@ export function TradeDetail() {
             const name = userName ?? album ?? resolvePlayerLabel(code, null) ?? code
             return {
               code,
+              teamCode,
               teamName: team?.name ?? teamCode,
+              group: team?.group ?? '',
               num,
               name,
               count: sticker?.count ?? 0,
             }
           })
+          annotated.sort((a, b) => compareAlbum(a.teamCode, a.num, b.teamCode, b.num))
           const noSpares = annotated.filter((r) => r.count <= 1)
           const available = annotated.filter((r) => r.count >= 2)
           return (
@@ -421,12 +431,15 @@ export function TradeDetail() {
             const name = userName ?? album ?? resolvePlayerLabel(code, null) ?? code
             return {
               code,
+              teamCode,
               teamName: team?.name ?? teamCode,
+              group: team?.group ?? '',
               num,
               name,
               count: sticker?.count ?? 0,
             }
           })
+          annotated.sort((a, b) => compareAlbum(a.teamCode, a.num, b.teamCode, b.num))
           const alreadyHave = annotated.filter((r) => r.count > 0)
           const newOnes = annotated.filter((r) => r.count === 0)
           return (
@@ -621,18 +634,34 @@ function Section({
   )
 }
 
-type Row = { code: string; teamName: string; num: number; name: string }
+type Row = {
+  code: string
+  teamCode: string
+  teamName: string
+  group: string
+  num: number
+  name: string
+}
 
 function buildRows(codes: string[], stickers: Map<string, { name: string | null }>): Row[] {
-  return codes.map((code) => {
+  const rows = codes.map((code) => {
     const [teamCode, numStr] = code.split('-')
     const team = TEAM_BY_CODE.get(teamCode)
     const num = parseInt(numStr, 10)
     const userName = stickers.get(code)?.name ?? null
     const album = albumPlayerName(code)
     const name = userName ?? album ?? resolvePlayerLabel(code, null) ?? code
-    return { code, teamName: team?.name ?? teamCode, num, name }
+    return {
+      code,
+      teamCode,
+      teamName: team?.name ?? teamCode,
+      group: team?.group ?? '',
+      num,
+      name,
+    }
   })
+  rows.sort((a, b) => compareAlbum(a.teamCode, a.num, b.teamCode, b.num))
+  return rows
 }
 
 function RemoveButton({
@@ -691,7 +720,7 @@ function AnnotatedTable({
 
   async function handleCopy() {
     try {
-      const text = formatGroupedCodes(rows.map((r) => r.code))
+      const text = formatGroupedCodes(rows.map((r) => r.code), 'album')
       await navigator.clipboard.writeText(text)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
@@ -740,8 +769,15 @@ function AnnotatedTable({
             <div className="flex items-center gap-3 px-3 py-2">
               <Check className={cn('h-3.5 w-3.5 shrink-0', iconCls)} />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-mono font-semibold text-neutral-900">
-                  {r.code}
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate text-xs font-mono font-semibold text-neutral-900">
+                    {r.code}
+                  </span>
+                  {r.group && (
+                    <span className="shrink-0 rounded bg-neutral-100 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-neutral-600">
+                      Grp {r.group}
+                    </span>
+                  )}
                 </div>
                 <div className="truncate text-[11px] text-neutral-600">
                   {r.name} · {r.teamName}
